@@ -90,7 +90,19 @@ export default function EditQuotePage() { // Non servono più props qui
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setEditingQuote(docSnap.data());
+          const data = docSnap.data();
+          // Backward compat: migrate THREE_WAY → CUSTOM
+          if (data.paymentType === 'THREE_WAY') {
+            data.paymentType = 'CUSTOM';
+            if (!data.customTranches) {
+              data.customTranches = [
+                { label: "Acconto Iniziale", percentage: 30, dueDate: "All'accettazione del preventivo", description: "Necessario per l'approvvigionamento materiali e pianificazione cantiere." },
+                { label: "A Metà Lavori", percentage: 30, dueDate: "Al raggiungimento del 50% dei lavori", description: "Stato avanzamento lavori intermedio." },
+                { label: "Saldo Finale", percentage: 40, dueDate: "A fine lavori", description: "Da versare a seguito del collaudo finale." }
+              ];
+            }
+          }
+          setEditingQuote(data);
         } else {
           console.log("Nessun preventivo trovato, ne creiamo uno nuovo.");
         }
@@ -118,6 +130,59 @@ export default function EditQuotePage() { // Non servono più props qui
     // Il totale ora coincide con l'imponibile
     return { subtotal, total: subtotal };
   }, [editingQuote]);
+
+  // Ricalcola importi pagamenti quando il totale cambia
+  useEffect(() => {
+    if (!editingQuote.paymentType || !editingQuote.paymentPlan?.length) return;
+    const total = liveSummary.total;
+    const type = editingQuote.paymentType;
+
+    if (type === 'CUSTOM' && editingQuote.customTranches?.length) {
+      const updatedPlan = editingQuote.customTranches.map(t => ({
+        label: t.label,
+        amount: (total * (parseFloat(t.percentage) || 0)) / 100,
+        percentage: parseFloat(t.percentage) || 0,
+        dueDate: t.dueDate,
+        description: t.description || "",
+        isPaid: false
+      }));
+      setEditingQuote(prev => ({ ...prev, paymentPlan: updatedPlan }));
+    } else if (type === 'PERCENTAGE') {
+      const perc = parseFloat(editingQuote.paymentValue) || 0;
+      const deposit = (total * perc) / 100;
+      setEditingQuote(prev => ({
+        ...prev,
+        paymentPlan: [
+          { ...prev.paymentPlan[0], amount: deposit, percentage: perc },
+          { ...prev.paymentPlan[1], amount: total - deposit, percentage: 100 - perc }
+        ]
+      }));
+    } else if (type === 'FIXED') {
+      const fixed = parseFloat(editingQuote.paymentValue) || 0;
+      setEditingQuote(prev => ({
+        ...prev,
+        paymentPlan: [
+          { ...prev.paymentPlan[0], amount: fixed },
+          { ...prev.paymentPlan[1], amount: total - fixed }
+        ]
+      }));
+    } else if (type === 'FIRST_DAY') {
+      const fixed = parseFloat(editingQuote.paymentValue) || 0;
+      setEditingQuote(prev => ({
+        ...prev,
+        paymentPlan: [
+          { ...prev.paymentPlan[0], amount: fixed },
+          { ...prev.paymentPlan[1], amount: total - fixed }
+        ]
+      }));
+    } else if (type === 'SINGLE') {
+      setEditingQuote(prev => ({
+        ...prev,
+        paymentPlan: [{ ...prev.paymentPlan[0], amount: total }]
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveSummary.total]);
 
   // --- Handlers (Uguali a prima) ---
   const handleDetailsChange = (e) => {
@@ -321,43 +386,33 @@ export default function EditQuotePage() { // Non servono più props qui
           isPaid: false
         }
       ];
-    } else if (type === 'THREE_WAY') {
-      const acconto = (total * 30) / 100;
-      const metaLavori = (total * 30) / 100;
-      const saldo = (total * 40) / 100;
-      plan = [
-        {
-          label: "Acconto Iniziale",
-          amount: acconto,
-          percentage: 30,
-          dueDate: "All'accettazione del preventivo",
-          description: "Necessario per l'approvvigionamento materiali e pianificazione cantiere.",
-          isPaid: false
-        },
-        {
-          label: "A Metà Lavori",
-          amount: metaLavori,
-          percentage: 30,
-          dueDate: "Al raggiungimento del 50% dei lavori",
-          description: "Stato avanzamento lavori intermedio.",
-          isPaid: false
-        },
-        {
-          label: "Saldo Finale",
-          amount: saldo,
-          percentage: 40,
-          dueDate: "A fine lavori",
-          description: "Da versare a seguito del collaudo finale.",
-          isPaid: false
-        }
+    } else if (type === 'CUSTOM') {
+      // value è un array di tranches: [{ label, percentage, dueDate, description }]
+      const tranches = Array.isArray(value) ? value : [
+        { label: "Acconto Iniziale", percentage: 30, dueDate: "All'accettazione del preventivo", description: "Necessario per l'approvvigionamento materiali e pianificazione cantiere." },
+        { label: "A Metà Lavori", percentage: 30, dueDate: "Al raggiungimento del 50% dei lavori", description: "Stato avanzamento lavori intermedio." },
+        { label: "Saldo Finale", percentage: 40, dueDate: "A fine lavori", description: "Da versare a seguito del collaudo finale." }
       ];
+      plan = tranches.map(t => ({
+        label: t.label,
+        amount: (total * (parseFloat(t.percentage) || 0)) / 100,
+        percentage: parseFloat(t.percentage) || 0,
+        dueDate: t.dueDate,
+        description: t.description || "",
+        isPaid: false
+      }));
     } else {
       plan = [
         { label: "Soluzione Unica", amount: total, dueDate: "A fine lavori", description: "Nessun acconto richiesto. Pagamento integrale al termine della posa.", isPaid: false }
       ];
     }
 
-    setEditingQuote(prev => ({ ...prev, paymentPlan: plan, paymentType: type, paymentValue: value }));
+    const extra = type === 'CUSTOM' ? { customTranches: Array.isArray(value) ? value : [
+      { label: "Acconto Iniziale", percentage: 30, dueDate: "All'accettazione del preventivo", description: "Necessario per l'approvvigionamento materiali e pianificazione cantiere." },
+      { label: "A Metà Lavori", percentage: 30, dueDate: "Al raggiungimento del 50% dei lavori", description: "Stato avanzamento lavori intermedio." },
+      { label: "Saldo Finale", percentage: 40, dueDate: "A fine lavori", description: "Da versare a seguito del collaudo finale." }
+    ]} : {};
+    setEditingQuote(prev => ({ ...prev, paymentPlan: plan, paymentType: type, paymentValue: value, ...extra }));
   };
 
   // --- 2. SALVATAGGIO SU FIREBASE (Versione Debug) ---
@@ -730,12 +785,20 @@ export default function EditQuotePage() { // Non servono più props qui
                 { id: 'PERCENTAGE', label: 'Acconto %' },
                 { id: 'FIXED', label: 'Acconto Fisso' },
                 { id: 'FIRST_DAY', label: 'Fine 1° Giorno' },
-                { id: 'THREE_WAY', label: '30 / 30 / 40' }
+                { id: 'CUSTOM', label: 'Rate Personalizzate' }
               ].map(type => (
                 <button
                   key={type.id}
                   // Quando clicchi il nuovo bottone, impostiamo un valore di default (es. 1000€)
-                  onClick={() => setPaymentStrategy(type.id, type.id === 'PERCENTAGE' ? 30 : 1000)}
+                  onClick={() => {
+                    if (type.id === 'CUSTOM') {
+                      // Se ci sono già tranches personalizzate salvate, usale
+                      const existingTranches = editingQuote.customTranches;
+                      setPaymentStrategy(type.id, existingTranches || null);
+                    } else {
+                      setPaymentStrategy(type.id, type.id === 'PERCENTAGE' ? 30 : 1000);
+                    }
+                  }}
                   className={`py-2 text-xs font-bold rounded-lg border transition-all ${editingQuote.paymentType === type.id
                     ? 'bg-black text-white border-black'
                     : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
@@ -783,6 +846,120 @@ export default function EditQuotePage() { // Non servono più props qui
                 <p className="text-[10px] text-gray-400 mt-1">
                   Il saldo rimanente verrà calcolato automaticamente per la fine lavori.
                 </p>
+              </div>
+            )}
+
+            {/* --- EDITOR RATE PERSONALIZZATE --- */}
+            {editingQuote.paymentType === 'CUSTOM' && (
+              <div className="mb-4 space-y-3">
+                {(editingQuote.customTranches || []).map((tranche, idx) => {
+                  return (
+                    <div key={idx} className="bg-gray-50 rounded-xl p-4 border border-gray-100 relative group">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-black text-white text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                        <StyledInput
+                          value={tranche.label}
+                          onChange={(e) => {
+                            const updated = [...editingQuote.customTranches];
+                            updated[idx] = { ...updated[idx], label: e.target.value };
+                            setPaymentStrategy('CUSTOM', updated);
+                          }}
+                          placeholder="Nome rata (es. Acconto Iniziale)"
+                          className="!text-sm !font-bold !bg-white"
+                        />
+                        {editingQuote.customTranches.length > 1 && (
+                          <button
+                            onClick={() => {
+                              const updated = editingQuote.customTranches.filter((_, i) => i !== idx);
+                              setPaymentStrategy('CUSTOM', updated);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                            title="Rimuovi rata"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Percentuale %</label>
+                          <div className="relative">
+                            <StyledInput
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={tranche.percentage}
+                              onChange={(e) => {
+                                const updated = [...editingQuote.customTranches];
+                                updated[idx] = { ...updated[idx], percentage: e.target.value };
+                                setPaymentStrategy('CUSTOM', updated);
+                              }}
+                              placeholder="30"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm font-medium">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Scadenza</label>
+                          <StyledInput
+                            value={tranche.dueDate}
+                            onChange={(e) => {
+                              const updated = [...editingQuote.customTranches];
+                              updated[idx] = { ...updated[idx], dueDate: e.target.value };
+                              setPaymentStrategy('CUSTOM', updated);
+                            }}
+                            placeholder="Es. All'accettazione"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1 block">Descrizione (opzionale)</label>
+                        <StyledInput
+                          value={tranche.description || ''}
+                          onChange={(e) => {
+                            const updated = [...editingQuote.customTranches];
+                            updated[idx] = { ...updated[idx], description: e.target.value };
+                            setPaymentStrategy('CUSTOM', updated);
+                          }}
+                          placeholder="Nota per il cliente..."
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Barra totale percentuali + Aggiungi rata */}
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const totalPerc = (editingQuote.customTranches || []).reduce((s, t) => s + (parseFloat(t.percentage) || 0), 0);
+                      const isValid = Math.abs(totalPerc - 100) < 0.01;
+                      return (
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${isValid ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                          Totale: {totalPerc.toFixed(0)}%{isValid ? ' ✓' : ' — deve essere 100%'}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const currentTranches = editingQuote.customTranches || [];
+                      const usedPerc = currentTranches.reduce((s, t) => s + (parseFloat(t.percentage) || 0), 0);
+                      const remaining = Math.max(0, 100 - usedPerc);
+                      const updated = [...currentTranches, {
+                        label: `Rata ${currentTranches.length + 1}`,
+                        percentage: remaining,
+                        dueDate: "",
+                        description: ""
+                      }];
+                      setPaymentStrategy('CUSTOM', updated);
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-black bg-white border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <Plus size={12} />
+                    Aggiungi rata
+                  </button>
+                </div>
               </div>
             )}
 
