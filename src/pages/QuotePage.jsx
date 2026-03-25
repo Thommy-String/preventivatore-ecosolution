@@ -402,8 +402,7 @@ export default function QuotePage() {
                       <p><strong className="text-[#1d1d1f]">8. Responsabilità e assicurazione.</strong> ECO SOLUTION S.a.s. è coperta da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente preventivo.</p>
                       <p><strong className="text-[#1d1d1f]">9. Smaltimento materiali.</strong> Lo smaltimento dei materiali di risulta è incluso nel preventivo solo se espressamente indicato nelle singole voci di spesa. In caso contrario, lo smaltimento sarà a carico del committente.</p>
                       <p><strong className="text-[#1d1d1f]">10. Risoluzione e recesso.</strong> In caso di recesso unilaterale da parte del committente dopo l'accettazione del preventivo, ECO SOLUTION S.a.s. avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.</p>
-                      <p><strong className="text-[#1d1d1f]">11. Foro competente.</strong> Per qualsiasi controversia derivante dall'interpretazione o dall'esecuzione del presente contratto, le parti concordano la competenza esclusiva del Foro di Lecco.</p>
-                      <p><strong className="text-[#1d1d1f]">12. Privacy.</strong> I dati personali raccolti saranno trattati in conformità al Regolamento UE 2016/679 (GDPR) e utilizzati esclusivamente per le finalità connesse all'esecuzione del presente incarico.</p>
+                      <p><strong className="text-[#1d1d1f]">11. Privacy.</strong> I dati personali raccolti saranno trattati in conformità al Regolamento UE 2016/679 (GDPR) e utilizzati esclusivamente per le finalità connesse all'esecuzione del presente incarico.</p>
                     </>
                   )}
                 </div>
@@ -459,9 +458,6 @@ export default function QuotePage() {
                   <div>
                     <p className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
                       ECO SOLUTION S.a.s.
-                    </p>
-                    <p className="text-[10px] text-[#86868b] uppercase tracking-wider">
-                      di Vasyl Fedorchuk
                     </p>
                   </div>
                 </div>
