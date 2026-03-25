@@ -49,7 +49,11 @@ export default function QuotePage() {
 
   // --- DOWNLOAD PREVENTIVO: Print nativo del browser → PDF perfetto su desktop e mobile ---
   const handleDownloadPreventivo = () => {
+    const originalTitle = document.title;
+    document.title = `Preventivo ${quote.clientName || 'Cliente'} - EcoSolution`;
     window.print();
+    // Ripristina il titolo originale dopo la stampa
+    setTimeout(() => { document.title = originalTitle; }, 1000);
   };
 
   return (
@@ -383,8 +387,25 @@ export default function QuotePage() {
                 <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
                   Termini e Condizioni
                 </h3>
-                <div className="text-[13px] text-[#86868b] leading-relaxed whitespace-pre-line">
-                  {quote.termsAndConditions || `1. Il presente preventivo ha validità di 30 giorni dalla data di emissione.\n2. I prezzi indicati sono al netto di IVA.\n3. Eventuali variazioni in corso d'opera saranno concordate preventivamente.\n4. I tempi di esecuzione sono indicativi e possono variare in base a condizioni meteo o imprevisti.\n5. Il committente garantisce libero accesso alle aree di lavoro.\n6. Eco Solution S.a.s. si riserva il diritto di sospendere i lavori in caso di mancato pagamento.`}
+                <div className="text-[12px] text-[#86868b] leading-[1.8] space-y-3">
+                  {quote.termsAndConditions ? (
+                    <div className="whitespace-pre-line">{quote.termsAndConditions}</div>
+                  ) : (
+                    <>
+                      <p><strong className="text-[#1d1d1f]">1. Validità del preventivo.</strong> Il presente preventivo ha validità di 30 (trenta) giorni dalla data di emissione. Decorso tale termine, ECO SOLUTION S.a.s. si riserva il diritto di aggiornare i prezzi indicati.</p>
+                      <p><strong className="text-[#1d1d1f]">2. Prezzi e imposte.</strong> Tutti gli importi indicati nel presente documento sono da intendersi al netto di IVA, che verrà applicata nella misura di legge vigente al momento della fatturazione.</p>
+                      <p><strong className="text-[#1d1d1f]">3. Modalità di pagamento.</strong> I pagamenti dovranno essere effettuati secondo le modalità e le tempistiche indicate nella sezione "Condizioni di Pagamento". In caso di mancato o ritardato pagamento, ECO SOLUTION S.a.s. si riserva il diritto di sospendere immediatamente l'esecuzione dei lavori e di applicare gli interessi moratori previsti dal D.Lgs. 231/2002.</p>
+                      <p><strong className="text-[#1d1d1f]">4. Variazioni in corso d'opera.</strong> Eventuali variazioni, integrazioni o lavorazioni aggiuntive rispetto a quanto descritto nel presente preventivo dovranno essere concordate per iscritto tra le parti prima della loro esecuzione. Le variazioni comporteranno un adeguamento dei costi e dei tempi di consegna.</p>
+                      <p><strong className="text-[#1d1d1f]">5. Tempi di esecuzione.</strong> I tempi indicati nel presente preventivo sono da considerarsi indicativi e non vincolanti. Eventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi o impedimenti nell'accesso ai locali non potranno essere imputati a ECO SOLUTION S.a.s.</p>
+                      <p><strong className="text-[#1d1d1f]">6. Obblighi del committente.</strong> Il committente si impegna a garantire il libero e sicuro accesso alle aree oggetto dell'intervento, a fornire l'allacciamento alla rete elettrica e idrica ove necessario, e a sgomberare preventivamente le aree di lavoro da arredi e oggetti personali. Eventuali danni a beni non rimossi dal committente non saranno imputabili a ECO SOLUTION S.a.s.</p>
+                      <p><strong className="text-[#1d1d1f]">7. Garanzia.</strong> ECO SOLUTION S.a.s. garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto. La garanzia non copre difetti derivanti da uso improprio, mancata manutenzione o interventi di terzi.</p>
+                      <p><strong className="text-[#1d1d1f]">8. Responsabilità e assicurazione.</strong> ECO SOLUTION S.a.s. è coperta da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente preventivo.</p>
+                      <p><strong className="text-[#1d1d1f]">9. Smaltimento materiali.</strong> Lo smaltimento dei materiali di risulta è incluso nel preventivo solo se espressamente indicato nelle singole voci di spesa. In caso contrario, lo smaltimento sarà a carico del committente.</p>
+                      <p><strong className="text-[#1d1d1f]">10. Risoluzione e recesso.</strong> In caso di recesso unilaterale da parte del committente dopo l'accettazione del preventivo, ECO SOLUTION S.a.s. avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.</p>
+                      <p><strong className="text-[#1d1d1f]">11. Foro competente.</strong> Per qualsiasi controversia derivante dall'interpretazione o dall'esecuzione del presente contratto, le parti concordano la competenza esclusiva del Foro di Lecco.</p>
+                      <p><strong className="text-[#1d1d1f]">12. Privacy.</strong> I dati personali raccolti saranno trattati in conformità al Regolamento UE 2016/679 (GDPR) e utilizzati esclusivamente per le finalità connesse all'esecuzione del presente incarico.</p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -426,22 +447,69 @@ export default function QuotePage() {
                 </div>
               </div>
 
-              {/* 4. INFO AZIENDALI */}
-              <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100 flex flex-col items-center text-center gap-6">
-                <img
-                  src={ecoLogo}
-                  alt="Eco Solution Logo"
-                  className="w-16 h-16 object-contain rounded-xl opacity-80"
-                />
-                <div className="flex flex-col items-center gap-2">
-                  <p className="text-[14px] font-bold text-[#1d1d1f] uppercase tracking-tight">
-                    ECO SOLUTION S.a.s.
-                  </p>
+              {/* 4. DATI AZIENDALI E COORDINATE BANCARIE */}
+              <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100">
+                
+                <div className="flex items-center gap-3 mb-8">
+                  <img
+                    src={ecoLogo}
+                    alt="Eco Solution Logo"
+                    className="w-12 h-12 object-contain rounded-lg opacity-80"
+                  />
+                  <div>
+                    <p className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
+                      ECO SOLUTION S.a.s.
+                    </p>
+                    <p className="text-[10px] text-[#86868b] uppercase tracking-wider">
+                      di Vasyl Fedorchuk
+                    </p>
+                  </div>
                 </div>
 
-                <div className="text-[12px] text-[#86868b] leading-relaxed max-w-sm uppercase tracking-wider font-medium opacity-60">
-                  P.IVA 04640600161 • Documento emesso il {quote.date} <br />
-                  Valido per 30 giorni dalla data di emissione.
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] text-[#86868b] leading-[1.7]">
+                  {/* Sedi */}
+                  <div>
+                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
+                    <p>Via Primo Maggio, 3</p>
+                    <p>23892 Bulciago (LC)</p>
+                    <div className="mt-3">
+                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Operativa</p>
+                      <p>Via Roma, 8</p>
+                      <p>20823 Lentate sul Seveso (MB)</p>
+                    </div>
+                  </div>
+
+                  {/* Dati Fiscali */}
+                  <div>
+                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
+                    <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
+                    <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
+                    <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">T9K4ZHO</span></p>
+                    <div className="mt-3">
+                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Documento</p>
+                      <p>Emesso il: <span className="text-[#1d1d1f] font-medium">{quote.date}</span></p>
+                      <p>Valido per 30 giorni dalla data di emissione</p>
+                    </div>
+                  </div>
+
+                  {/* Coordinate Bancarie */}
+                  <div>
+                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
+                    <p className="font-medium text-[#1d1d1f]">Banca di Credito Cooperativo di Barlassina</p>
+                    <p>Filiale di Lentate sul Seveso (MB)</p>
+                    <p>Via Papa Giovanni XXIII, 6</p>
+                    <p>20823 Lentate sul Seveso (MB)</p>
+                    <div className="mt-2">
+                      <p>C/C N. <span className="text-[#1d1d1f] font-medium">06/605276</span></p>
+                      <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">IT29 L083 7433 2400 0000 6605 276</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-4 border-t border-gray-50 text-center">
+                  <p className="text-[10px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
+                    Documento generato dal sistema di gestione ECO SOLUTION S.a.s.
+                  </p>
                 </div>
               </div>
 
