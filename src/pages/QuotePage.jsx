@@ -4,6 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { MapPin, Check, User, Calendar, FileText, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 
 // Logo aziendale
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
@@ -50,10 +51,10 @@ export default function QuotePage() {
   ) : 0;
   const displayDuration = quote.duration || (calculatedDays > 0 ? `${calculatedDays} Giorni` : "Da definire");
 
-  // --- DOWNLOAD PREVENTIVO: Screenshot pixel-perfect + apre in nuova tab ---
+  // --- DOWNLOAD PREVENTIVO: Screenshot pixel-perfect → PDF A4 ---
   const handleDownloadPreventivo = async () => {
     setGeneratingPdf(true);
-    setPdfProgress('Preparazione immagine...');
+    setPdfProgress('Preparazione...');
 
     try {
       const container = printRef.current;
@@ -69,20 +70,14 @@ export default function QuotePage() {
 
       // Disable animations during capture
       const styleTag = document.createElement('style');
-      styleTag.textContent = `
-        *, *::before, *::after { 
-          animation: none !important; 
-          transition: none !important; 
-        }
-      `;
+      styleTag.textContent = `*, *::before, *::after { animation: none !important; transition: none !important; }`;
       document.head.appendChild(styleTag);
 
-      await new Promise(r => setTimeout(r, 200));
-
-      setPdfProgress('Rendering pagina completa...');
+      await new Promise(r => setTimeout(r, 300));
+      setPdfProgress('Rendering pagina...');
       await new Promise(r => setTimeout(r, 50));
 
-      // Single full-page screenshot — pixel perfect, no cuts
+      // Full-page screenshot at 2x
       const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
@@ -100,64 +95,57 @@ export default function QuotePage() {
       container.style.borderRadius = originalBorderRadius;
       document.head.removeChild(styleTag);
 
-      setPdfProgress('Apertura preventivo...');
+      setPdfProgress('Generazione PDF A4...');
       await new Promise(r => setTimeout(r, 50));
 
-      // Convert to PNG blob
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          alert('Errore nella creazione dell\'immagine.');
-          return;
-        }
-        const url = URL.createObjectURL(blob);
+      // --- PDF A4: image fills width, flows across pages ---
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdfWidthMM = 210; // A4 width
+      const pdfHeightMM = 297; // A4 height
+      const marginMM = 0; // No margins — nudo e crudo
 
-        // 1. Download file
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Preventivo_${quote.quoteNumber || quoteId.slice(-4)}_${(quote.clientName || 'Cliente').replace(/\s+/g, '_')}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+      const usableWidth = pdfWidthMM - marginMM * 2;
+      const imgAspect = canvas.height / canvas.width;
+      const totalImgHeightMM = usableWidth * imgAspect;
+      const usableHeight = pdfHeightMM - marginMM * 2;
 
-        // 2. Open in new tab — full width, scrolled to top
-        const newTab = window.open('', '_blank');
-        if (newTab) {
-          newTab.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Preventivo ${quote.quoteNumber || ''} — ${quote.clientName || 'Cliente'}</title>
-              <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { 
-                  background: #f5f5f7; 
-                  display: flex; 
-                  justify-content: center; 
-                  padding: 20px 0;
-                  min-height: 100vh;
-                }
-                img { 
-                  width: 100%; 
-                  max-width: 960px; 
-                  height: auto; 
-                  display: block;
-                  box-shadow: 0 24px 60px -12px rgba(0,0,0,0.08);
-                }
-              </style>
-            </head>
-            <body>
-              <img src="${url}" alt="Preventivo" />
-            </body>
-            </html>
-          `);
-          newTab.document.close();
-          newTab.scrollTo(0, 0);
-        }
-      }, 'image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let yOffset = 0;
+      let pageNum = 0;
+
+      while (yOffset < totalImgHeightMM) {
+        if (pageNum > 0) pdf.addPage();
+
+        // Calculate source crop in canvas pixels
+        const sliceTopPx = (yOffset / totalImgHeightMM) * canvas.height;
+        const sliceHeightPx = (usableHeight / totalImgHeightMM) * canvas.height;
+        const actualSliceHeight = Math.min(sliceHeightPx, canvas.height - sliceTopPx);
+
+        // Create a temp canvas for this page slice
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = Math.ceil(actualSliceHeight);
+        const ctx = pageCanvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(canvas, 0, sliceTopPx, canvas.width, actualSliceHeight, 0, 0, canvas.width, actualSliceHeight);
+
+        const sliceData = pageCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceHeightMM = (actualSliceHeight / canvas.height) * totalImgHeightMM;
+
+        pdf.addImage(sliceData, 'JPEG', marginMM, marginMM, usableWidth, sliceHeightMM);
+
+        yOffset += usableHeight;
+        pageNum++;
+      }
+
+      // Download PDF
+      const fileName = `Preventivo_${quote.quoteNumber || quoteId.slice(-4)}_${(quote.clientName || 'Cliente').replace(/\s+/g, '_')}.pdf`;
+      pdf.save(fileName);
 
     } catch (error) {
-      console.error('Errore generazione immagine:', error);
-      alert('Errore durante la generazione del preventivo. Riprova.');
+      console.error('Errore generazione PDF:', error);
+      alert('Errore durante la generazione del PDF. Riprova.');
     } finally {
       setGeneratingPdf(false);
       setPdfProgress('');
