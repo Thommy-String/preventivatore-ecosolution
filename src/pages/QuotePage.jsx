@@ -2,9 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { MapPin, Check, User, Calendar, FileText, Download, Loader2 } from 'lucide-react';
-import html2canvas from 'html2canvas-pro';
-import { jsPDF } from 'jspdf';
+import { MapPin, Check, User, Calendar, FileText, Download } from 'lucide-react';
 
 // Logo aziendale
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
@@ -24,8 +22,6 @@ export default function QuotePage() {
   const { quoteId } = useParams();
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [pdfProgress, setPdfProgress] = useState('');
   const printRef = useRef(null);
 
   useEffect(() => {
@@ -51,111 +47,15 @@ export default function QuotePage() {
   ) : 0;
   const displayDuration = quote.duration || (calculatedDays > 0 ? `${calculatedDays} Giorni` : "Da definire");
 
-  // --- DOWNLOAD PREVENTIVO: Screenshot pixel-perfect → PDF A4 ---
-  const handleDownloadPreventivo = async () => {
-    setGeneratingPdf(true);
-    setPdfProgress('Preparazione...');
-
-    try {
-      const container = printRef.current;
-      if (!container) throw new Error('Container not found');
-
-      // Force desktop width for consistent rendering
-      const originalMaxWidth = container.style.maxWidth;
-      const originalWidth = container.style.width;
-      const originalBorderRadius = container.style.borderRadius;
-      container.style.maxWidth = '960px';
-      container.style.width = '960px';
-      container.style.borderRadius = '0';
-
-      // Disable animations during capture
-      const styleTag = document.createElement('style');
-      styleTag.textContent = `*, *::before, *::after { animation: none !important; transition: none !important; }`;
-      document.head.appendChild(styleTag);
-
-      await new Promise(r => setTimeout(r, 300));
-      setPdfProgress('Rendering pagina...');
-      await new Promise(r => setTimeout(r, 50));
-
-      // Full-page screenshot at 2x
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 960,
-        scrollX: 0,
-        scrollY: -window.scrollY,
-      });
-
-      // Restore originals
-      container.style.maxWidth = originalMaxWidth;
-      container.style.width = originalWidth;
-      container.style.borderRadius = originalBorderRadius;
-      document.head.removeChild(styleTag);
-
-      setPdfProgress('Generazione PDF A4...');
-      await new Promise(r => setTimeout(r, 50));
-
-      // --- PDF A4: image fills width, flows across pages ---
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      const pdfWidthMM = 210; // A4 width
-      const pdfHeightMM = 297; // A4 height
-      const marginMM = 0; // No margins — nudo e crudo
-
-      const usableWidth = pdfWidthMM - marginMM * 2;
-      const imgAspect = canvas.height / canvas.width;
-      const totalImgHeightMM = usableWidth * imgAspect;
-      const usableHeight = pdfHeightMM - marginMM * 2;
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let yOffset = 0;
-      let pageNum = 0;
-
-      while (yOffset < totalImgHeightMM) {
-        if (pageNum > 0) pdf.addPage();
-
-        // Calculate source crop in canvas pixels
-        const sliceTopPx = (yOffset / totalImgHeightMM) * canvas.height;
-        const sliceHeightPx = (usableHeight / totalImgHeightMM) * canvas.height;
-        const actualSliceHeight = Math.min(sliceHeightPx, canvas.height - sliceTopPx);
-
-        // Create a temp canvas for this page slice
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = Math.ceil(actualSliceHeight);
-        const ctx = pageCanvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        ctx.drawImage(canvas, 0, sliceTopPx, canvas.width, actualSliceHeight, 0, 0, canvas.width, actualSliceHeight);
-
-        const sliceData = pageCanvas.toDataURL('image/jpeg', 0.92);
-        const sliceHeightMM = (actualSliceHeight / canvas.height) * totalImgHeightMM;
-
-        pdf.addImage(sliceData, 'JPEG', marginMM, marginMM, usableWidth, sliceHeightMM);
-
-        yOffset += usableHeight;
-        pageNum++;
-      }
-
-      // Download PDF
-      const fileName = `Preventivo_${quote.quoteNumber || quoteId.slice(-4)}_${(quote.clientName || 'Cliente').replace(/\s+/g, '_')}.pdf`;
-      pdf.save(fileName);
-
-    } catch (error) {
-      console.error('Errore generazione PDF:', error);
-      alert('Errore durante la generazione del PDF. Riprova.');
-    } finally {
-      setGeneratingPdf(false);
-      setPdfProgress('');
-    }
+  // --- DOWNLOAD PREVENTIVO: Print nativo del browser → PDF perfetto su desktop e mobile ---
+  const handleDownloadPreventivo = () => {
+    window.print();
   };
 
   return (
-    <div className="min-h-screen font-sans selection:bg-[#cce9ff] pb-20 pt-6 md:pt-12 overflow-x-hidden">
+    <div className="min-h-screen font-sans selection:bg-[#cce9ff] pb-20 pt-6 md:pt-12 overflow-x-hidden print:pt-0 print:pb-0 print:bg-white">
 
-      <main ref={printRef} className="max-w-[960px] mx-auto bg-white min-h-[1000px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.06)] sm:rounded-[32px] overflow-hidden relative">
+      <main ref={printRef} className="max-w-[960px] mx-auto bg-white min-h-[1000px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.06)] sm:rounded-[32px] overflow-hidden relative print:max-w-full print:shadow-none print:rounded-none">
 
         {/* --- BANNER AZIENDALE ELEGANTE & RESPONSIVE --- */}
         <div data-pdf-block="banner" className="bg-white border-b border-gray-100">
@@ -551,23 +451,13 @@ export default function QuotePage() {
 
       </main>
 
-      <div className="max-w-[960px] mx-auto mt-8 px-6 text-center space-y-4">
+      <div className="max-w-[960px] mx-auto mt-8 px-6 text-center space-y-4 print:hidden">
         <button
           onClick={handleDownloadPreventivo}
-          disabled={generatingPdf}
-          className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10"
         >
-          {generatingPdf ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              {pdfProgress || 'Preparazione...'}
-            </>
-          ) : (
-            <>
-              <Download size={18} />
-              Scarica Preventivo
-            </>
-          )}
+          <Download size={18} />
+          Scarica Preventivo
         </button>
         <p className="text-[12px] text-gray-400 font-medium tracking-tight">
           Documento creato con il sistema di gestione interno di Eco Solution S.a.s. Sviluppato e mantenuto da Thomas.

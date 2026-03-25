@@ -2,3 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- PRINT STYLES: Ottimizzazione per "Salva come PDF" --- */
+@media print {
+  /* Rimuovi sfondo pagina e padding esterno */
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Il contenitore principale occupa tutta la larghezza */
+  main {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Nascondi il wrapper esterno padding/background */
+  .min-h-screen {
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  /* Forza i colori di sfondo nelle stampe */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Nascondi elementi non necessari nella stampa */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Disabilita animazioni */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Evita tagli brutti a metà sezione */
+  [data-pdf-block] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Le immagini non devono mai essere tagliate */
+  img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Rimuovi il bordo arrotondato del main in stampa */
+  .sm\:rounded-\[32px\] {
+    border-radius: 0 !important;
+  }
+
+  /* Margini di pagina minimi */
+  @page {
+    margin: 8mm 0mm;
+    size: A4;
+  }
+}
+
