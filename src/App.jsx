@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import AdminDashboard from './pages/AdminDashboard';
 import QuotePage from './pages/QuotePage';
 import EditQuotePage from './pages/EditQuotePage';
+import ContractPage from './pages/ContractPage';
 import { mockQuote } from './data/mockQuote';
 
 function App() {
@@ -25,6 +26,10 @@ function App() {
       <Route 
         path="/admin/quote/:quoteId/edit" 
         element={<EditQuotePage quotes={quotes} setQuotes={setQuotes} />} 
+      />
+      <Route 
+        path="/contract/:quoteId" 
+        element={<ContractPage />} 
       />
     </Routes>
   );

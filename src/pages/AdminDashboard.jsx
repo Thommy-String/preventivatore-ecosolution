@@ -4,7 +4,7 @@ import { doc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore"
 import { db } from "../firebase";
 import { 
   Loader2, Plus, FileText, Edit, Eye, Trash2, 
-  Search, TrendingUp, Users, ChevronRight 
+  Search, TrendingUp, Users, ChevronRight, ScrollText 
 } from 'lucide-react';
 
 // --- SOTTO-COMPONENTI UI ---
@@ -226,6 +226,9 @@ export default function AdminDashboard() {
                     </Link>
                     <Link to={`/quote/${quote.id}`} className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
                       <Eye size={20} />
+                    </Link>
+                    <Link to={`/contract/${quote.id}`} className="p-3 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all" title="Genera Contratto">
+                      <ScrollText size={20} />
                     </Link>
                     <button 
                       onClick={() => handleDelete(quote.id, quote.clientName)}

@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { MapPin, Check, User, Calendar, FileText, Download } from 'lucide-react';
+import { MapPin, Check, User, Calendar, FileText, Download, ScrollText } from 'lucide-react';
 
 // Logo aziendale
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
@@ -516,13 +516,22 @@ export default function QuotePage() {
       </main>
 
       <div className="max-w-[960px] mx-auto mt-8 px-6 text-center space-y-4 print:hidden">
-        <button
-          onClick={handleDownloadPreventivo}
-          className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10"
-        >
-          <Download size={18} />
-          Scarica Preventivo
-        </button>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <button
+            onClick={handleDownloadPreventivo}
+            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10"
+          >
+            <Download size={18} />
+            Scarica Preventivo
+          </button>
+          <Link
+            to={`/contract/${quoteId}`}
+            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-white text-[#1d1d1f] text-[15px] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-lg shadow-black/5 border border-gray-200"
+          >
+            <ScrollText size={18} />
+            Genera Contratto
+          </Link>
+        </div>
         <p className="text-[12px] text-gray-400 font-medium tracking-tight">
           Documento creato con il sistema di gestione interno di Eco Solution S.a.s. Sviluppato e mantenuto da Thomas.
         </p>
