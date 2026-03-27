@@ -4,6 +4,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import QuotePage from './pages/QuotePage';
 import EditQuotePage from './pages/EditQuotePage';
 import ContractPage from './pages/ContractPage';
+import EditContractPage from './pages/EditContractPage';
 import { mockQuote } from './data/mockQuote';
 
 function App() {
@@ -30,6 +31,10 @@ function App() {
       <Route 
         path="/contract/:quoteId" 
         element={<ContractPage />} 
+      />
+      <Route 
+        path="/admin/contract/:quoteId/edit" 
+        element={<EditContractPage />} 
       />
     </Routes>
   );

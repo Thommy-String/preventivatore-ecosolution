@@ -2,12 +2,26 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Download, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft, Edit } from 'lucide-react';
 
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+
+// ─── Same defaults as EditContractPage (fallback if contractData not yet saved) ───
+const DEFAULT_ARTICLES = [
+  { id: 'art-tempi', title: 'Tempi di esecuzione', body: `I lavori avranno inizio indicativamente alla data concordata tra le parti. La durata prevista è indicativa.\n\nI tempi indicati sono da considerarsi indicativi. Eventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore.` },
+  { id: 'art-obblighi-comm', title: 'Obblighi del Committente', body: `Il Committente si impegna a:\na) Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;\nb) Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;\nc) Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;\nd) Comunicare tempestivamente eventuali impedimenti o variazioni;\ne) Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge.\n\nEventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.` },
+  { id: 'art-obblighi-app', title: "Obblighi dell'Appaltatore", body: `L'Appaltatore si impegna a:\na) Eseguire i lavori a regola d'arte, conformemente alle normative vigenti e agli standard tecnici applicabili;\nb) Utilizzare materiali di qualità conforme a quanto indicato nel preventivo;\nc) Rispettare le norme di sicurezza sul lavoro (D.Lgs. 81/2008);\nd) Mantenere in ordine e pulite le aree di lavoro durante e al termine dell'intervento;\ne) Comunicare tempestivamente eventuali problematiche o ritardi nell'esecuzione.` },
+  { id: 'art-variazioni', title: "Variazioni in corso d'opera", body: `Eventuali variazioni, integrazioni o lavorazioni aggiuntive rispetto a quanto descritto nel presente contratto e nel preventivo di riferimento dovranno essere concordate per iscritto tra le parti prima della loro esecuzione.\n\nLe variazioni comporteranno un adeguamento proporzionale dei costi e dei tempi di consegna, che sarà formalizzato mediante addendum al presente contratto.` },
+  { id: 'art-garanzia', title: 'Garanzia', body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.` },
+  { id: 'art-responsabilita', title: 'Responsabilità e assicurazione', body: `L'Appaltatore è coperto da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente contratto.` },
+  { id: 'art-smaltimento', title: 'Smaltimento materiali', body: `Lo smaltimento dei materiali di risulta è incluso nel corrispettivo solo se espressamente indicato nelle singole voci del preventivo. In caso contrario, lo smaltimento sarà a carico del Committente.` },
+  { id: 'art-recesso', title: 'Risoluzione e recesso', body: `Ciascuna parte potrà recedere dal presente contratto con comunicazione scritta inviata all'altra parte con un preavviso di almeno 15 (quindici) giorni.\n\nIn caso di recesso unilaterale da parte del Committente dopo l'accettazione, l'Appaltatore avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.\n\nL'Appaltatore potrà risolvere il contratto in caso di morosità del Committente superiore a 30 giorni dalla scadenza di qualsivoglia rata, previa diffida scritta.` },
+  { id: 'art-privacy', title: 'Trattamento dei dati personali', body: `Le parti si impegnano reciprocamente al trattamento dei dati personali in conformità al Regolamento UE 2016/679 (GDPR). I dati raccolti saranno utilizzati esclusivamente per le finalità connesse all'esecuzione del presente contratto e degli obblighi di legge.` },
+  { id: 'art-finali', title: 'Disposizioni finali', body: `Il presente contratto, unitamente al Preventivo allegato, costituisce l'accordo completo tra le parti in relazione all'oggetto dello stesso e sostituisce ogni precedente accordo o intesa, orale o scritta.\n\nEventuali modifiche o integrazioni al presente contratto dovranno essere stipulate per iscritto e sottoscritte da entrambe le parti.\n\nPer quanto non espressamente previsto dal presente contratto, si applicano le disposizioni del Codice Civile in materia di appalto (artt. 1655 e ss. c.c.) e le normative vigenti in materia.` },
+];
 
 export default function ContractPage() {
   const { quoteId } = useParams();
@@ -39,17 +53,43 @@ export default function ContractPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#86868b] text-sm">Caricamento contratto...</div>;
   if (!quote) return <div className="min-h-screen flex items-center justify-center text-[#86868b] text-sm">Contratto non trovato.</div>;
 
+  // ─── Read contractData (or use defaults) ───
+  const cd = quote.contractData || {};
+  const vatRate = cd.vatRate ?? 10;
+  const articles = cd.articles?.length ? cd.articles : DEFAULT_ARTICLES;
+
   const contractNumber = quote.quoteNumber || quoteId.slice(-4).toUpperCase();
-  const totalAmount = quote.summary?.subtotal || quote.summary?.total || 0;
+  const netto = quote.summary?.subtotal || quote.summary?.total || 0;
+  const ivaAmount = netto * (vatRate / 100);
+  const lordo = netto + ivaAmount;
+
+  const premesseText = cd.premesseText ||
+    `Con il presente contratto, il Committente affida all'Appaltatore — e quest'ultimo accetta — l'esecuzione dei lavori descritti nel progetto denominato "${quote.projectName}", da eseguirsi presso: ${quote.address || 'indirizzo da definire'}.\n\nIl presente contratto è redatto sulla base del Preventivo n. #${contractNumber} del ${quote.date}, che le parti dichiarano di conoscere e accettare integralmente e che costituisce parte integrante del presente accordo.`;
+
+  const corrispettivoText = cd.corrispettivoText ||
+    `Eventuali variazioni in corso d'opera, concordate per iscritto tra le parti, comporteranno un adeguamento proporzionale del corrispettivo e dei tempi di esecuzione.`;
+
+  const pagamentiText = cd.pagamentiText ||
+    `I pagamenti dovranno essere effettuati a mezzo bonifico bancario sulle coordinate indicate in calce al presente contratto. In caso di mancato o ritardato pagamento, l'Appaltatore si riserva il diritto di sospendere l'esecuzione dei lavori e di applicare gli interessi moratori previsti dal D.Lgs. 231/2002.`;
+
+  // Article numbering: Art.1 (lavori), Art.2 (corrispettivo), Art.3 (pagamenti), then Art.4+ from articles array
+  const artOffset = 4;
 
   return (
     <div className="min-h-screen font-sans selection:bg-[#cce9ff] pb-20 pt-6 md:pt-12 overflow-x-hidden print:pt-0 print:pb-0 print:bg-white bg-[#f5f5f7]">
 
-      {/* --- BACK LINK (hidden on print) --- */}
-      <div className="max-w-[800px] mx-auto mb-4 px-6 print:hidden">
+      {/* ─── Navigation bar (hidden on print) ─── */}
+      <div className="max-w-[800px] mx-auto mb-4 px-6 print:hidden flex items-center justify-between">
         <Link to={`/quote/${quoteId}`} className="inline-flex items-center gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] transition-colors font-medium">
           <ArrowLeft size={14} />
           Torna al preventivo
+        </Link>
+        <Link 
+          to={`/admin/contract/${quoteId}/edit`}
+          className="inline-flex items-center gap-1.5 text-[13px] text-blue-600 hover:text-blue-700 transition-colors font-medium"
+        >
+          <Edit size={14} />
+          Modifica contratto
         </Link>
       </div>
 
@@ -60,43 +100,26 @@ export default function ContractPage() {
         ═══════════════════════════════════════════ */}
         <div data-pdf-block="contract-header" className="px-12 md:px-16 pt-14 pb-10 border-b border-gray-100">
           
-          {/* Logo + Titolo Documento */}
           <div className="flex items-start justify-between gap-6 mb-10">
             <div className="flex items-center gap-4">
-              <img
-                src={ecoLogo}
-                alt="Eco Solution"
-                className="w-14 h-14 object-contain rounded-lg border border-black/5"
-              />
+              <img src={ecoLogo} alt="Eco Solution" className="w-14 h-14 object-contain rounded-lg border border-black/5" />
               <div>
-                <h2 className="text-[15px] font-bold text-[#1d1d1f] tracking-tight leading-tight uppercase">
-                  ECO SOLUTION S.a.s.
-                </h2>
+                <h2 className="text-[15px] font-bold text-[#1d1d1f] tracking-tight leading-tight uppercase">ECO SOLUTION S.a.s.</h2>
                 <p className="text-[11px] text-[#a1a1a6] font-medium mt-0.5">Impresa Edile</p>
               </div>
             </div>
             <div className="text-right shrink-0">
               <p className="text-[9px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contratto N.</p>
-              <p className="text-[22px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">
-                #{contractNumber}
-              </p>
+              <p className="text-[22px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">#{contractNumber}</p>
             </div>
           </div>
 
-          {/* Titolo Contratto */}
           <div className="text-center mb-10">
-            <h1 className="text-[22px] md:text-[26px] font-bold text-[#1d1d1f] tracking-tight uppercase">
-              Contratto di Appalto
-            </h1>
-            <p className="text-[13px] text-[#86868b] mt-2 font-medium">
-              per l'esecuzione di lavori edili
-            </p>
+            <h1 className="text-[22px] md:text-[26px] font-bold text-[#1d1d1f] tracking-tight uppercase">Contratto di Appalto</h1>
+            <p className="text-[13px] text-[#86868b] mt-2 font-medium">per l'esecuzione di lavori edili</p>
           </div>
 
-          {/* Parti Contrattuali */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* Appaltatore */}
             <div className="bg-[#fafafa] rounded-2xl p-6">
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Appaltatore</p>
               <p className="text-[14px] font-bold text-[#1d1d1f]">ECO SOLUTION S.a.s.</p>
@@ -108,8 +131,6 @@ export default function ContractPage() {
                 <p>Email: info@ecosolutionsas.it</p>
               </div>
             </div>
-
-            {/* Committente */}
             <div className="bg-[#fafafa] rounded-2xl p-6">
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Committente</p>
               <p className="text-[14px] font-bold text-[#1d1d1f]">{quote.clientName || '—'}</p>
@@ -120,123 +141,97 @@ export default function ContractPage() {
                 <p className="mt-2 border-b border-dashed border-gray-200 pb-1">Email: ___________________________</p>
               </div>
             </div>
-
           </div>
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            PREMESSE
-        ═══════════════════════════════════════════ */}
+        {/* ═══ PREMESSE ═══ */}
         <div data-pdf-block="premesse" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Premesse
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Con il presente contratto, il Committente affida all'Appaltatore — e quest'ultimo accetta — l'esecuzione 
-              dei lavori descritti nel progetto denominato <strong>"{quote.projectName}"</strong>, 
-              da eseguirsi presso: <strong>{quote.address || 'indirizzo da definire'}</strong>.
-            </p>
-            <p className="mt-3">
-              Il presente contratto è redatto sulla base del Preventivo n. <strong>#{contractNumber}</strong> del <strong>{quote.date}</strong>, 
-              che le parti dichiarano di conoscere e accettare integralmente e che costituisce parte integrante del presente accordo.
-            </p>
-          </div>
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Premesse</h3>
+          <div className="text-[13px] text-[#1d1d1f] leading-[1.9] whitespace-pre-line">{premesseText}</div>
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            ART. 1 — OGGETTO DEI LAVORI
-        ═══════════════════════════════════════════ */}
+        {/* ═══ ART. 1 — OGGETTO DEI LAVORI (Dettagliato) ═══ */}
         <div data-pdf-block="art-1-lavori" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 1 — Oggetto dei lavori
-          </h3>
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 1 — Oggetto dei lavori</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-6">
             L'Appaltatore si impegna ad eseguire a regola d'arte le seguenti lavorazioni:
           </p>
 
-          {/* Tabella lavorazioni */}
-          <div className="border border-gray-100 rounded-2xl overflow-hidden">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-[#fafafa]">
-                  <th className="px-5 py-3 text-[9px] font-black text-[#86868b] uppercase tracking-[0.15em]">N.</th>
-                  <th className="px-5 py-3 text-[9px] font-black text-[#86868b] uppercase tracking-[0.15em]">Lavorazione</th>
-                  <th className="px-5 py-3 text-[9px] font-black text-[#86868b] uppercase tracking-[0.15em] text-right">Importo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quote.sections && quote.sections.map((section, idx) => {
-                  const sectionTotal = section.items
-                    ? section.items.reduce((acc, item) => acc + (item.price * item.quantity), 0)
-                    : 0;
-                  return (
-                    <tr key={section.id || idx} className="border-t border-gray-50">
-                      <td className="px-5 py-3.5 text-[12px] text-[#a1a1a6] font-medium tabular-nums">
-                        {String(idx + 1).padStart(2, '0')}
-                      </td>
-                      <td className="px-5 py-3.5 text-[13px] text-[#1d1d1f] font-medium">
-                        {section.title}
-                      </td>
-                      <td className="px-5 py-3.5 text-[14px] text-[#1d1d1f] font-bold tabular-nums text-right">
-                        {formatCurrency(sectionTotal)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-gray-200 bg-[#fafafa]">
-                  <td className="px-5 py-4" colSpan={2}>
-                    <span className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
-                      Totale Complessivo
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right">
-                    <span className="text-[18px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">
-                      {formatCurrency(totalAmount)}
-                    </span>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+          {quote.sections?.map((section, sIdx) => {
+            const sectionTotal = section.items?.reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseFloat(i.quantity) || 0)), 0) || 0;
+            return (
+              <div key={section.id || sIdx} data-pdf-block={`lavori-${sIdx}`} className="mb-6 last:mb-0">
+                {/* Section header */}
+                <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 pb-2 mb-3">
+                  <h4 className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
+                    {String(sIdx + 1).padStart(2, '0')}. {section.title}
+                  </h4>
+                  <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight shrink-0">
+                    {formatCurrency(sectionTotal)}
+                  </span>
+                </div>
 
-          <p className="text-[11px] text-[#a1a1a6] mt-3 italic">
-            * Tutti gli importi sono da intendersi al netto di IVA, che verrà applicata nella misura di legge.
-          </p>
+                {/* Items detail */}
+                <div className="space-y-0">
+                  {section.items?.map((item, iIdx) => {
+                    const itemTotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                    return (
+                      <div key={item.id || iIdx} className="flex items-start justify-between gap-4 py-2 border-b border-gray-50 last:border-b-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] text-[#1d1d1f] leading-relaxed">
+                            {item.description || '—'}
+                          </p>
+                          <p className="text-[10px] text-[#a1a1a6] mt-0.5 tabular-nums">
+                            {item.quantity} {item.unit} × {formatCurrency(item.price)}
+                          </p>
+                        </div>
+                        <span className="text-[12px] font-medium text-[#1d1d1f] tabular-nums shrink-0">
+                          {formatCurrency(itemTotal)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Riepilogo totali con IVA */}
+          <div data-pdf-block="totali-iva" className="mt-8 border-t-2 border-gray-200 pt-5">
+            <div className="flex items-baseline justify-between py-1.5">
+              <span className="text-[12px] text-[#86868b] font-medium">Imponibile</span>
+              <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums">{formatCurrency(netto)}</span>
+            </div>
+            <div className="flex items-baseline justify-between py-1.5">
+              <span className="text-[12px] text-[#86868b] font-medium">IVA ({vatRate}%)</span>
+              <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums">{formatCurrency(ivaAmount)}</span>
+            </div>
+            <div className="flex items-baseline justify-between py-2 border-t border-gray-200 mt-1">
+              <span className="text-[14px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale Complessivo</span>
+              <span className="text-[20px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
+            </div>
+          </div>
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            ART. 2 — CORRISPETTIVO
-        ═══════════════════════════════════════════ */}
+        {/* ═══ ART. 2 — CORRISPETTIVO ═══ */}
         <div data-pdf-block="art-2-corrispettivo" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 2 — Corrispettivo
-          </h3>
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 2 — Corrispettivo</h3>
           <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
             <p>
-              Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito in <strong>{formatCurrency(totalAmount)}</strong> (IVA esclusa), 
-              secondo quanto dettagliato nel preventivo di riferimento.
+              Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito 
+              in <strong>{formatCurrency(netto)}</strong> (imponibile) oltre IVA al {vatRate}% pari 
+              a <strong>{formatCurrency(ivaAmount)}</strong>, per un totale 
+              di <strong>{formatCurrency(lordo)}</strong>.
             </p>
-            <p className="mt-3">
-              Eventuali variazioni in corso d'opera, concordate per iscritto tra le parti, comporteranno un adeguamento proporzionale 
-              del corrispettivo e dei tempi di esecuzione.
-            </p>
+            {corrispettivoText && (
+              <div className="mt-3 whitespace-pre-line">{corrispettivoText}</div>
+            )}
           </div>
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            ART. 3 — MODALITÀ DI PAGAMENTO
-        ═══════════════════════════════════════════ */}
+        {/* ═══ ART. 3 — MODALITÀ DI PAGAMENTO ═══ */}
         <div data-pdf-block="art-3-pagamenti" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 3 — Modalità di pagamento
-          </h3>
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 3 — Modalità di pagamento</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-6">
             Il pagamento del corrispettivo avverrà secondo il seguente piano:
           </p>
@@ -277,237 +272,33 @@ export default function ContractPage() {
             </p>
           )}
 
-          <div className="mt-6 text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              I pagamenti dovranno essere effettuati a mezzo bonifico bancario sulle coordinate indicate in calce al presente contratto. 
-              In caso di mancato o ritardato pagamento, l'Appaltatore si riserva il diritto di sospendere l'esecuzione 
-              dei lavori e di applicare gli interessi moratori previsti dal D.Lgs. 231/2002.
-            </p>
-          </div>
+          {pagamentiText && (
+            <div className="mt-6 text-[13px] text-[#1d1d1f] leading-[1.9] whitespace-pre-line">
+              {pagamentiText}
+            </div>
+          )}
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            ART. 4 — TEMPI DI ESECUZIONE
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-4-tempi" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 4 — Tempi di esecuzione
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              {quote.estimatedStart 
-                ? <>I lavori avranno inizio indicativamente il <strong>{quote.estimatedStart}</strong>.</>
-                : <>La data di inizio lavori sarà concordata tra le parti.</>
-              }
-              {' '}La durata prevista è di <strong>{quote.duration || 'da definire'}</strong>.
-            </p>
-            <p className="mt-3">
-              I tempi indicati sono da considerarsi indicativi. Eventuali ritardi dovuti a cause di forza maggiore, 
-              condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso 
-              ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore.
-            </p>
+        {/* ═══ ARTICOLI DINAMICI (Art. 4, 5, 6...) ═══ */}
+        {articles.map((art, idx) => (
+          <div key={art.id} data-pdf-block={`art-${artOffset + idx}`} className="px-12 md:px-16 py-10 border-b border-gray-100">
+            <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
+              Art. {artOffset + idx} — {art.title}
+            </h3>
+            <div className="text-[13px] text-[#1d1d1f] leading-[1.9] whitespace-pre-line">
+              {art.body}
+            </div>
           </div>
-        </div>
+        ))}
 
-
-        {/* ═══════════════════════════════════════════
-            ART. 5 — OBBLIGHI DEL COMMITTENTE
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-5-obblighi" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 5 — Obblighi del Committente
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>Il Committente si impegna a:</p>
-            <ul className="list-none mt-3 space-y-2">
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">a)</span> Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">b)</span> Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">c)</span> Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">d)</span> Comunicare tempestivamente eventuali impedimenti o variazioni;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">e)</span> Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge.</li>
-            </ul>
-            <p className="mt-3">
-              Eventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 6 — OBBLIGHI DELL'APPALTATORE
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-6-obblighi-app" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 6 — Obblighi dell'Appaltatore
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>L'Appaltatore si impegna a:</p>
-            <ul className="list-none mt-3 space-y-2">
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">a)</span> Eseguire i lavori a regola d'arte, conformemente alle normative vigenti e agli standard tecnici applicabili;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">b)</span> Utilizzare materiali di qualità conforme a quanto indicato nel preventivo;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">c)</span> Rispettare le norme di sicurezza sul lavoro (D.Lgs. 81/2008);</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">d)</span> Mantenere in ordine e pulite le aree di lavoro durante e al termine dell'intervento;</li>
-              <li className="flex gap-2"><span className="text-[#a1a1a6] shrink-0">e)</span> Comunicare tempestivamente eventuali problematiche o ritardi nell'esecuzione.</li>
-            </ul>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 7 — VARIAZIONI IN CORSO D'OPERA
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-7-variazioni" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 7 — Variazioni in corso d'opera
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Eventuali variazioni, integrazioni o lavorazioni aggiuntive rispetto a quanto descritto nel presente 
-              contratto e nel preventivo di riferimento dovranno essere concordate per iscritto tra le parti prima 
-              della loro esecuzione.
-            </p>
-            <p className="mt-3">
-              Le variazioni comporteranno un adeguamento proporzionale dei costi e dei tempi di consegna, che sarà 
-              formalizzato mediante addendum al presente contratto.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 8 — GARANZIA
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-8-garanzia" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 8 — Garanzia
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. 
-              La garanzia sui lavori eseguiti ha durata di <strong>24 (ventiquattro) mesi</strong> dalla data di fine lavori, salvo diverso accordo scritto.
-            </p>
-            <p className="mt-3">
-              La garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, 
-              interventi di terzi non autorizzati, o eventi di forza maggiore.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 9 — RESPONSABILITÀ E ASSICURAZIONE
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-9-resp" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 9 — Responsabilità e assicurazione
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              L'Appaltatore è coperto da polizza assicurativa di responsabilità civile per danni a terzi derivanti 
-              dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente 
-              riconducibili alle opere oggetto del presente contratto.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 10 — SMALTIMENTO MATERIALI
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-10-smaltimento" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 10 — Smaltimento materiali
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Lo smaltimento dei materiali di risulta è incluso nel corrispettivo solo se espressamente indicato nelle 
-              singole voci del preventivo. In caso contrario, lo smaltimento sarà a carico del Committente.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 11 — RISOLUZIONE E RECESSO
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-11-recesso" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 11 — Risoluzione e recesso
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Ciascuna parte potrà recedere dal presente contratto con comunicazione scritta inviata all'altra parte 
-              con un preavviso di almeno 15 (quindici) giorni.
-            </p>
-            <p className="mt-3">
-              In caso di recesso unilaterale da parte del Committente dopo l'accettazione, l'Appaltatore avrà diritto 
-              al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al <strong>20%</strong> dell'importo 
-              residuo non eseguito.
-            </p>
-            <p className="mt-3">
-              L'Appaltatore potrà risolvere il contratto in caso di morosità del Committente superiore a 30 giorni dalla 
-              scadenza di qualsivoglia rata, previa diffida scritta.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 12 — PRIVACY
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-12-privacy" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 12 — Trattamento dei dati personali
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Le parti si impegnano reciprocamente al trattamento dei dati personali in conformità al Regolamento UE 2016/679 (GDPR). 
-              I dati raccolti saranno utilizzati esclusivamente per le finalità connesse all'esecuzione del presente contratto e 
-              degli obblighi di legge.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            ART. 13 — DISPOSIZIONI FINALI
-        ═══════════════════════════════════════════ */}
-        <div data-pdf-block="art-13-finali" className="px-12 md:px-16 py-10 border-b border-gray-100">
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Art. 13 — Disposizioni finali
-          </h3>
-          <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Il presente contratto, unitamente al Preventivo n. #{contractNumber} allegato, costituisce l'accordo completo 
-              tra le parti in relazione all'oggetto dello stesso e sostituisce ogni precedente accordo o intesa, orale o scritta.
-            </p>
-            <p className="mt-3">
-              Eventuali modifiche o integrazioni al presente contratto dovranno essere stipulate per iscritto e sottoscritte da entrambe le parti.
-            </p>
-            <p className="mt-3">
-              Per quanto non espressamente previsto dal presente contratto, si applicano le disposizioni del Codice Civile 
-              in materia di appalto (artt. 1655 e ss. c.c.) e le normative vigenti in materia.
-            </p>
-          </div>
-        </div>
-
-
-        {/* ═══════════════════════════════════════════
-            FIRME
-        ═══════════════════════════════════════════ */}
+        {/* ═══ FIRME ═══ */}
         <div data-pdf-block="firme" className="px-12 md:px-16 py-14">
-          
-          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
-            Sottoscrizione del contratto
-          </h3>
-
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Sottoscrizione del contratto</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-10">
-            Le parti dichiarano di aver letto, compreso e accettato integralmente tutte le clausole del presente contratto. 
+            Le parti dichiarano di aver letto, compreso e accettato integralmente tutte le clausole del presente contratto.
             In fede, si sottoscrive in triplice copia originale.
           </p>
 
-          {/* Data e Luogo */}
           <div className="flex items-center gap-8 mb-12">
             <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Luogo</p>
@@ -519,10 +310,7 @@ export default function ContractPage() {
             </div>
           </div>
 
-          {/* Tre colonne firma */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            
-            {/* Firma Committente */}
             <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Il Committente</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
@@ -531,8 +319,6 @@ export default function ContractPage() {
               <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
               <p className="text-[10px] text-[#a1a1a6]">{quote.clientName || 'Nome e Cognome'}</p>
             </div>
-
-            {/* Firma Geometra / Direttore Lavori */}
             <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Il Direttore Lavori</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
@@ -541,8 +327,6 @@ export default function ContractPage() {
               <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
               <p className="text-[10px] text-[#a1a1a6]">Geom. / D.L.</p>
             </div>
-
-            {/* Firma Eco Solution */}
             <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Per ECO SOLUTION S.a.s.</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
@@ -551,31 +335,16 @@ export default function ContractPage() {
               <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
               <p className="text-[10px] text-[#a1a1a6]">Il Legale Rappresentante</p>
             </div>
-
           </div>
         </div>
 
-
-        {/* ═══════════════════════════════════════════
-            FOOTER AZIENDALE CON COORDINATE BANCARIE
-        ═══════════════════════════════════════════ */}
+        {/* ═══ FOOTER AZIENDALE ═══ */}
         <div data-pdf-block="contract-footer" className="px-12 md:px-16 py-12 border-t border-gray-100 bg-[#fafafa]">
-          
           <div className="flex items-center gap-3 mb-8">
-            <img
-              src={ecoLogo}
-              alt="Eco Solution Logo"
-              className="w-10 h-10 object-contain rounded-lg opacity-80"
-            />
-            <div>
-              <p className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">
-                ECO SOLUTION S.a.s.
-              </p>
-            </div>
+            <img src={ecoLogo} alt="Eco Solution Logo" className="w-10 h-10 object-contain rounded-lg opacity-80" />
+            <p className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">ECO SOLUTION S.a.s.</p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] text-[#86868b] leading-[1.7]">
-            {/* Sedi */}
             <div>
               <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
               <p>Via Primo Maggio, 3</p>
@@ -586,16 +355,12 @@ export default function ContractPage() {
                 <p>20823 Lentate sul Seveso (MB)</p>
               </div>
             </div>
-
-            {/* Dati Fiscali */}
             <div>
               <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
               <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
               <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
               <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">T9K4ZHO</span></p>
             </div>
-
-            {/* Coordinate Bancarie */}
             <div>
               <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
               <p className="font-medium text-[#1d1d1f]">Banca di Credito Cooperativo di Barlassina</p>
@@ -608,7 +373,6 @@ export default function ContractPage() {
               </div>
             </div>
           </div>
-
           <div className="mt-8 pt-4 border-t border-gray-200/50 text-center">
             <p className="text-[9px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
               Contratto generato dal sistema di gestione ECO SOLUTION S.a.s.
@@ -618,15 +382,24 @@ export default function ContractPage() {
 
       </main>
 
-      {/* --- PULSANTI AZIONE (hidden on print) --- */}
+      {/* ─── Action buttons (hidden on print) ─── */}
       <div className="max-w-[800px] mx-auto mt-8 px-6 text-center space-y-4 print:hidden">
-        <button
-          onClick={handlePrint}
-          className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10"
-        >
-          <Download size={18} />
-          Scarica Contratto
-        </button>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <button
+            onClick={handlePrint}
+            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#1d1d1f] text-white text-[15px] font-semibold rounded-xl hover:bg-[#333] transition-all shadow-lg shadow-black/10"
+          >
+            <Download size={18} />
+            Scarica Contratto
+          </button>
+          <Link
+            to={`/admin/contract/${quoteId}/edit`}
+            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-white text-[#1d1d1f] text-[15px] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-lg shadow-black/5 border border-gray-200"
+          >
+            <Edit size={18} />
+            Modifica Contratto
+          </Link>
+        </div>
         <p className="text-[12px] text-gray-400 font-medium tracking-tight">
           Documento creato con il sistema di gestione interno di Eco Solution S.a.s.
         </p>
