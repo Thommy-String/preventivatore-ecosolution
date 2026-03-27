@@ -11,17 +11,21 @@ const formatCurrency = (value) =>
 
 // ─── Same defaults as EditContractPage (fallback if contractData not yet saved) ───
 const DEFAULT_ARTICLES = [
-  { id: 'art-tempi', title: 'Tempi di esecuzione', body: `I lavori avranno inizio indicativamente alla data concordata tra le parti. La durata prevista è indicativa.\n\nI tempi indicati sono da considerarsi indicativi. Eventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore.` },
-  { id: 'art-obblighi-comm', title: 'Obblighi del Committente', body: `Il Committente si impegna a:\na) Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;\nb) Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;\nc) Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;\nd) Comunicare tempestivamente eventuali impedimenti o variazioni;\ne) Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge.\n\nEventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.` },
+  { id: 'art-tempi', title: 'Tempi di esecuzione', body: `I lavori avranno inizio entro la data concordata tra le parti e avranno una durata presunta indicata nel preventivo di riferimento, espressa in giorni lavorativi, salvo imprevisti o cause di forza maggiore.\n\nEventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore e comporteranno una proroga automatica dei termini.` },
+  { id: 'art-obblighi-comm', title: 'Obblighi del Committente', body: `Il Committente si impegna a:\na) Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;\nb) Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;\nc) Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;\nd) Comunicare tempestivamente eventuali impedimenti o variazioni;\ne) Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge;\nf) Qualora nel cantiere intervengano più imprese, il Committente è tenuto a nominare il Coordinatore per la Sicurezza in fase di Progettazione e di Esecuzione ai sensi del D.Lgs. 81/2008, sollevando l'Appaltatore da tale responsabilità.\n\nEventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.` },
   { id: 'art-obblighi-app', title: "Obblighi dell'Appaltatore", body: `L'Appaltatore si impegna a:\na) Eseguire i lavori a regola d'arte, conformemente alle normative vigenti e agli standard tecnici applicabili;\nb) Utilizzare materiali di qualità conforme a quanto indicato nel preventivo;\nc) Rispettare le norme di sicurezza sul lavoro (D.Lgs. 81/2008);\nd) Mantenere in ordine e pulite le aree di lavoro durante e al termine dell'intervento;\ne) Comunicare tempestivamente eventuali problematiche o ritardi nell'esecuzione.` },
   { id: 'art-variazioni', title: "Variazioni in corso d'opera", body: `Eventuali variazioni, integrazioni o lavorazioni aggiuntive rispetto a quanto descritto nel presente contratto e nel preventivo di riferimento dovranno essere concordate per iscritto tra le parti prima della loro esecuzione.\n\nLe variazioni comporteranno un adeguamento proporzionale dei costi e dei tempi di consegna, che sarà formalizzato mediante addendum al presente contratto.` },
-  { id: 'art-garanzia', title: 'Garanzia', body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.` },
+  { id: 'art-garanzia', title: 'Garanzia', body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.\n\nSono esclusi dalla garanzia i normali fenomeni di assestamento, ritiro e movimenti naturali dei materiali.` },
   { id: 'art-responsabilita', title: 'Responsabilità e assicurazione', body: `L'Appaltatore è coperto da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente contratto.` },
   { id: 'art-smaltimento', title: 'Smaltimento materiali', body: `Lo smaltimento dei materiali di risulta è incluso nel corrispettivo solo se espressamente indicato nelle singole voci del preventivo. In caso contrario, lo smaltimento sarà a carico del Committente.` },
   { id: 'art-recesso', title: 'Risoluzione e recesso', body: `Ciascuna parte potrà recedere dal presente contratto con comunicazione scritta inviata all'altra parte con un preavviso di almeno 15 (quindici) giorni.\n\nIn caso di recesso unilaterale da parte del Committente dopo l'accettazione, l'Appaltatore avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.\n\nL'Appaltatore potrà risolvere il contratto in caso di morosità del Committente superiore a 30 giorni dalla scadenza di qualsivoglia rata, previa diffida scritta.` },
   { id: 'art-privacy', title: 'Trattamento dei dati personali', body: `Le parti si impegnano reciprocamente al trattamento dei dati personali in conformità al Regolamento UE 2016/679 (GDPR). I dati raccolti saranno utilizzati esclusivamente per le finalità connesse all'esecuzione del presente contratto e degli obblighi di legge.` },
+  { id: 'art-foro', title: 'Foro competente', body: `Per qualsiasi controversia derivante dall'interpretazione o dall'esecuzione del presente contratto, sarà competente in via esclusiva il Foro del luogo di residenza o domicilio del Committente, ai sensi dell'art. 33, comma 2, lettera u) del D.Lgs. 206/2005 (Codice del Consumo).` },
   { id: 'art-finali', title: 'Disposizioni finali', body: `Il presente contratto, unitamente al Preventivo allegato, costituisce l'accordo completo tra le parti in relazione all'oggetto dello stesso e sostituisce ogni precedente accordo o intesa, orale o scritta.\n\nEventuali modifiche o integrazioni al presente contratto dovranno essere stipulate per iscritto e sottoscritte da entrambe le parti.\n\nPer quanto non espressamente previsto dal presente contratto, si applicano le disposizioni del Codice Civile in materia di appalto (artt. 1655 e ss. c.c.) e le normative vigenti in materia.` },
 ];
+
+// Articles whose clauses require double-signature under Art. 1341/1342 C.C.
+const VESSATORIE_IDS = ['art-garanzia', 'art-recesso'];
 
 export default function ContractPage() {
   const { quoteId } = useParams();
@@ -74,6 +78,11 @@ export default function ContractPage() {
 
   // Article numbering: Art.1 (lavori), Art.2 (corrispettivo), Art.3 (pagamenti), then Art.4+ from articles array
   const artOffset = 4;
+
+  // Identify vessatorie articles for double-signature reference
+  const vessatorieRefs = articles
+    .map((art, idx) => ({ ...art, artNum: artOffset + idx }))
+    .filter(a => VESSATORIE_IDS.includes(a.id));
 
   return (
     <div className="min-h-screen font-sans selection:bg-[#cce9ff] pb-20 pt-6 md:pt-12 overflow-x-hidden print:pt-0 print:pb-0 print:bg-white bg-[#f5f5f7]">
@@ -135,10 +144,32 @@ export default function ContractPage() {
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Committente</p>
               <p className="text-[14px] font-bold text-[#1d1d1f]">{quote.clientName || '—'}</p>
               <div className="text-[12px] text-[#86868b] leading-[1.8] mt-2">
-                {quote.address && <p>Indirizzo: {quote.address}</p>}
-                <p className="mt-3 border-b border-dashed border-gray-200 pb-1">C.F. / P.IVA: ___________________________</p>
-                <p className="mt-2 border-b border-dashed border-gray-200 pb-1">Tel: ___________________________</p>
-                <p className="mt-2 border-b border-dashed border-gray-200 pb-1">Email: ___________________________</p>
+                {quote.address && <p>Indirizzo lavori: {quote.address}</p>}
+                <div className="mt-3 space-y-2.5">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[11px] font-semibold text-[#1d1d1f] shrink-0">C.F.*</span>
+                    <div className="flex-1 border-b border-[#1d1d1f]/30 pb-0.5 min-h-[18px]"></div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[11px] text-[#86868b] shrink-0">P.IVA</span>
+                    <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[11px] text-[#86868b] shrink-0">Residenza</span>
+                    <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] text-[#86868b] shrink-0">Tel</span>
+                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] text-[#86868b] shrink-0">Email</span>
+                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[9px] text-[#a1a1a6] mt-2 italic">* Campo obbligatorio ai fini della fatturazione e delle detrazioni fiscali</p>
               </div>
             </div>
           </div>
@@ -157,46 +188,38 @@ export default function ContractPage() {
             L'Appaltatore si impegna ad eseguire a regola d'arte le seguenti lavorazioni:
           </p>
 
-          <div className="space-y-10">
+          <div className="space-y-8">
             {quote.sections?.map((section, sIdx) => {
               const sectionTotal = section.items?.reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseFloat(i.quantity) || 0)), 0) || 0;
               return (
                 <div key={section.id || sIdx} data-pdf-block={`lavori-${sIdx}`}>
-                  {/* ── Section title ── */}
-                  <div className="flex items-baseline justify-between gap-6 mb-2">
-                    <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                      <span className="text-[#a1a1a6] font-normal mr-1.5">{String(sIdx + 1).padStart(2, '0')}</span>
-                      {section.title}
-                    </h4>
-                    <span className="text-[15px] font-bold text-[#1d1d1f] tabular-nums tracking-tight shrink-0">
-                      {formatCurrency(sectionTotal)}
-                    </span>
+                  {/* ── Section header ── */}
+                  <div className="mb-3">
+                    <div className="flex items-baseline justify-between gap-6">
+                      <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                        <span className="text-[12px] text-[#c7c7cc] font-medium tabular-nums mr-2">{String(sIdx + 1).padStart(2, '0')}</span>
+                        {section.title}
+                      </h4>
+                      <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight shrink-0">
+                        {formatCurrency(sectionTotal)}
+                      </span>
+                    </div>
+                    {section.description && (
+                      <p className="text-[11px] text-[#a1a1a6] leading-[1.7] mt-1.5 ml-7">
+                        {section.description}
+                      </p>
+                    )}
                   </div>
 
-                  {/* ── Section description (full written text) ── */}
-                  {section.description && (
-                    <p className="text-[11px] text-[#a1a1a6] leading-[1.7] mb-4 max-w-[90%]">
-                      {section.description}
-                    </p>
-                  )}
-
-                  {/* ── Items table — minimal Apple style ── */}
-                  <div className="border-t border-[#e8e8ed]">
+                  {/* ── Items ── */}
+                  <div className="ml-7">
                     {section.items?.map((item, iIdx) => {
                       const itemTotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
                       return (
-                        <div key={item.id || iIdx} className="flex items-baseline justify-between gap-4 py-[10px] border-b border-[#f0f0f3]">
-                          <div className="flex-1 min-w-0">
-                            <span className="text-[12px] text-[#424245] leading-snug">{item.description || '—'}</span>
-                          </div>
-                          <div className="flex items-baseline gap-5 shrink-0">
-                            <span className="text-[10px] text-[#a1a1a6] tabular-nums tracking-tight whitespace-nowrap">
-                              {item.quantity} {item.unit} &times; {formatCurrency(item.price)}
-                            </span>
-                            <span className="text-[12px] font-medium text-[#1d1d1f] tabular-nums tracking-tight w-[72px] text-right">
-                              {formatCurrency(itemTotal)}
-                            </span>
-                          </div>
+                        <div key={item.id || iIdx} className={`flex items-baseline justify-between gap-4 py-[9px] ${iIdx > 0 ? 'border-t border-[#f5f5f7]' : ''}`}>
+                          <span className="text-[11.5px] text-[#48484a] leading-snug flex-1 min-w-0">{item.description || '—'}</span>
+                          <span className="text-[10px] text-[#a1a1a6] tabular-nums whitespace-nowrap shrink-0">{item.quantity} {item.unit}</span>
+                          <span className="text-[11.5px] font-medium text-[#1d1d1f] tabular-nums tracking-tight w-[68px] text-right shrink-0">{formatCurrency(itemTotal)}</span>
                         </div>
                       );
                     })}
@@ -247,34 +270,34 @@ export default function ContractPage() {
           </p>
 
           {quote.paymentPlan && quote.paymentPlan.length > 0 ? (
-            <div className="space-y-0">
+            <div className="rounded-2xl border border-[#e8e8ed] overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3 bg-[#fafafa] border-b border-[#e8e8ed]">
+                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em]">Descrizione</span>
+                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em] text-right w-14">Quota</span>
+                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em] text-right w-24">Importo</span>
+              </div>
+              {/* Rows */}
               {quote.paymentPlan.map((p, idx) => (
-                <div key={idx} data-pdf-block={`contract-payment-${idx}`} className="flex items-start gap-5 py-4 border-b border-gray-50 last:border-b-0">
-                  <div className="w-7 h-7 rounded-full bg-[#fafafa] border border-gray-200 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-bold text-[#86868b]">{idx + 1}</span>
+                <div key={idx} data-pdf-block={`contract-payment-${idx}`} className={`grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-4 items-baseline ${idx < quote.paymentPlan.length - 1 ? 'border-b border-[#f0f0f3]' : ''}`}>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-[#1d1d1f] leading-snug">{p.label}</p>
+                    {p.dueDate && <p className="text-[11px] text-[#a1a1a6] mt-0.5">{p.dueDate}</p>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-1 mb-1">
-                      <p className="text-[13px] font-bold text-[#1d1d1f]">{p.label}</p>
-                      <span className="text-[16px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">
-                        {formatCurrency(p.amount)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-[#86868b]">
-                      {p.dueDate && <span>Scadenza: {p.dueDate}</span>}
-                      {p.percentage && (
-                        <>
-                          <span className="text-gray-200">•</span>
-                          <span>{p.percentage}% del totale</span>
-                        </>
-                      )}
-                    </div>
-                    {p.description && (
-                      <p className="text-[12px] text-[#a1a1a6] mt-1.5 leading-relaxed">{p.description}</p>
-                    )}
-                  </div>
+                  <span className="text-[11px] text-[#86868b] tabular-nums text-right w-14 shrink-0">
+                    {p.percentage ? `${p.percentage}%` : '—'}
+                  </span>
+                  <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight text-right w-24 shrink-0">
+                    {formatCurrency(p.amount)}
+                  </span>
                 </div>
               ))}
+              {/* Total row */}
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3.5 bg-[#fafafa] border-t border-[#e8e8ed]">
+                <span className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">Totale</span>
+                <span className="text-[11px] text-[#86868b] tabular-nums text-right w-14">100%</span>
+                <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight text-right w-24">{formatCurrency(netto)}</span>
+              </div>
             </div>
           ) : (
             <p className="text-[13px] text-[#86868b] italic">
@@ -306,7 +329,7 @@ export default function ContractPage() {
           <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Sottoscrizione del contratto</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-10">
             Le parti dichiarano di aver letto, compreso e accettato integralmente tutte le clausole del presente contratto.
-            In fede, si sottoscrive in triplice copia originale.
+            In fede, si sottoscrive in duplice copia originale.
           </p>
 
           <div className="flex items-center gap-8 mb-12">
@@ -320,7 +343,7 @@ export default function ContractPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Il Committente</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
@@ -330,20 +353,52 @@ export default function ContractPage() {
               <p className="text-[10px] text-[#a1a1a6]">{quote.clientName || 'Nome e Cognome'}</p>
             </div>
             <div>
-              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Il Direttore Lavori</p>
-              <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
-                <p className="text-[11px] text-[#a1a1a6] italic">Firma per accettazione</p>
-              </div>
-              <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
-              <p className="text-[10px] text-[#a1a1a6]">Geom. / D.L.</p>
-            </div>
-            <div>
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Per ECO SOLUTION S.a.s.</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
                 <p className="text-[11px] text-[#a1a1a6] italic">Timbro e firma</p>
               </div>
               <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
               <p className="text-[10px] text-[#a1a1a6]">Il Legale Rappresentante</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ CLAUSOLE VESSATORIE — DOPPIA FIRMA (Artt. 1341-1342 C.C.) ═══ */}
+        <div data-pdf-block="clausole-vessatorie" className="px-12 md:px-16 py-12 border-t border-gray-100 bg-[#fafafa]">
+          <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-4">
+            Approvazione specifica ai sensi degli Artt. 1341 e 1342 C.C.
+          </h3>
+          <div className="text-[12px] text-[#1d1d1f] leading-[1.9] mb-8">
+            <p className="mb-3">
+              Il Committente dichiara di aver letto, compreso e di approvare specificamente, ai sensi e per gli effetti degli Artt. 1341 e 1342 del Codice Civile, le seguenti clausole del presente contratto:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-[12px] text-[#424245]">
+              {vessatorieRefs.length > 0 ? (
+                vessatorieRefs.map(a => (
+                  <li key={a.id}><strong>Art. {a.artNum}</strong> — {a.title}</li>
+                ))
+              ) : (
+                <>
+                  <li><strong>Garanzia</strong> — limitazioni della copertura</li>
+                  <li><strong>Risoluzione e recesso</strong> — indennizzo del 20% in caso di recesso</li>
+                </>
+              )}
+            </ul>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Il Committente — Firma per approvazione specifica</p>
+              <div className="border border-gray-200 rounded-xl bg-white min-h-[80px] mb-3 p-4">
+                <p className="text-[11px] text-[#a1a1a6] italic">Seconda firma obbligatoria</p>
+              </div>
+              <div className="border-b border-[#1d1d1f]/20 pb-1 mb-1.5"></div>
+              <p className="text-[10px] text-[#a1a1a6]">{quote.clientName || 'Nome e Cognome'}</p>
+            </div>
+            <div className="flex items-end pb-6">
+              <p className="text-[10px] text-[#a1a1a6] leading-[1.7]">
+                La presente approvazione specifica è necessaria ai fini della validità delle clausole sopra elencate, ai sensi degli Artt. 1341 e 1342 del Codice Civile italiano.
+              </p>
             </div>
           </div>
         </div>
@@ -383,11 +438,6 @@ export default function ContractPage() {
               </div>
             </div>
           </div>
-          <div className="mt-8 pt-4 border-t border-gray-200/50 text-center">
-            <p className="text-[9px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
-              Contratto generato dal sistema di gestione ECO SOLUTION S.a.s.
-            </p>
-          </div>
         </div>
 
       </main>
@@ -410,9 +460,6 @@ export default function ContractPage() {
             Modifica Contratto
           </Link>
         </div>
-        <p className="text-[12px] text-gray-400 font-medium tracking-tight">
-          Documento creato con il sistema di gestione interno di Eco Solution S.a.s.
-        </p>
       </div>
     </div>
   );

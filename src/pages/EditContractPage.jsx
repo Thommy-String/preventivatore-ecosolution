@@ -11,12 +11,12 @@ const DEFAULT_ARTICLES = [
   {
     id: 'art-tempi',
     title: 'Tempi di esecuzione',
-    body: `I lavori avranno inizio indicativamente alla data concordata tra le parti. La durata prevista è indicativa.\n\nI tempi indicati sono da considerarsi indicativi. Eventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore.`
+    body: `I lavori avranno inizio entro la data concordata tra le parti e avranno una durata presunta indicata nel preventivo di riferimento, espressa in giorni lavorativi, salvo imprevisti o cause di forza maggiore.\n\nEventuali ritardi dovuti a cause di forza maggiore, condizioni meteorologiche avverse, ritardi nella fornitura di materiali da terzi, impedimenti nell'accesso ai locali o variazioni richieste dal Committente non potranno essere imputati all'Appaltatore e comporteranno una proroga automatica dei termini.`
   },
   {
     id: 'art-obblighi-comm',
     title: 'Obblighi del Committente',
-    body: `Il Committente si impegna a:\na) Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;\nb) Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;\nc) Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;\nd) Comunicare tempestivamente eventuali impedimenti o variazioni;\ne) Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge.\n\nEventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.`
+    body: `Il Committente si impegna a:\na) Garantire il libero e sicuro accesso alle aree oggetto dell'intervento per tutta la durata dei lavori;\nb) Fornire l'allacciamento alla rete elettrica e idrica ove necessario per l'esecuzione dei lavori;\nc) Sgomberare preventivamente le aree di lavoro da arredi, oggetti personali e materiali fragili;\nd) Comunicare tempestivamente eventuali impedimenti o variazioni;\ne) Provvedere, ove necessario, all'ottenimento di permessi, autorizzazioni e comunicazioni a norma di legge;\nf) Qualora nel cantiere intervengano più imprese, il Committente è tenuto a nominare il Coordinatore per la Sicurezza in fase di Progettazione e di Esecuzione ai sensi del D.Lgs. 81/2008, sollevando l'Appaltatore da tale responsabilità.\n\nEventuali danni a beni non rimossi dal Committente non saranno imputabili all'Appaltatore.`
   },
   {
     id: 'art-obblighi-app',
@@ -31,7 +31,7 @@ const DEFAULT_ARTICLES = [
   {
     id: 'art-garanzia',
     title: 'Garanzia',
-    body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.`
+    body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.\n\nSono esclusi dalla garanzia i normali fenomeni di assestamento, ritiro e movimenti naturali dei materiali.`
   },
   {
     id: 'art-responsabilita',
@@ -52,6 +52,11 @@ const DEFAULT_ARTICLES = [
     id: 'art-privacy',
     title: 'Trattamento dei dati personali',
     body: `Le parti si impegnano reciprocamente al trattamento dei dati personali in conformità al Regolamento UE 2016/679 (GDPR). I dati raccolti saranno utilizzati esclusivamente per le finalità connesse all'esecuzione del presente contratto e degli obblighi di legge.`
+  },
+  {
+    id: 'art-foro',
+    title: 'Foro competente',
+    body: `Per qualsiasi controversia derivante dall'interpretazione o dall'esecuzione del presente contratto, sarà competente in via esclusiva il Foro del luogo di residenza o domicilio del Committente, ai sensi dell'art. 33, comma 2, lettera u) del D.Lgs. 206/2005 (Codice del Consumo).`
   },
   {
     id: 'art-finali',
