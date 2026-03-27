@@ -180,6 +180,9 @@ export default function EditQuotePage() { // Non servono più props qui
         ...prev,
         paymentPlan: [{ ...prev.paymentPlan[0], amount: total }]
       }));
+    } else if (type === 'MILESTONES') {
+      // Re-trigger full recalc with stored config
+      setPaymentStrategy('MILESTONES', editingQuote.milestoneConfig || { depositPercentage: 0, tappe: [] });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveSummary.total]);
@@ -401,6 +404,76 @@ export default function EditQuotePage() { // Non servono più props qui
         description: t.description || "",
         isPaid: false
       }));
+    } else if (type === 'MILESTONES') {
+      // value = { depositPercentage?: number, tappe: [{ id, titleItemKey, itemKeys: [] }] }
+      const config = typeof value === 'object' && value !== null ? value : { depositPercentage: 0, tappe: [] };
+      const { depositPercentage = 0, tappe = [] } = config;
+      const sections = editingQuote.sections || [];
+
+      // Helper: resolve itemKey "sectionId::itemId" → { item, section }
+      const resolveKey = (key) => {
+        const [secId, itemId] = key.split('::');
+        const sec = sections.find(s => s.id === secId);
+        const item = sec?.items?.find(i => i.id === itemId);
+        return { section: sec, item };
+      };
+      const itemAmount = (key) => {
+        const { item } = resolveKey(key);
+        return item ? (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0) : 0;
+      };
+
+      // Optional initial deposit
+      const depositAmount = depositPercentage > 0 ? (total * depositPercentage) / 100 : 0;
+      if (depositPercentage > 0) {
+        plan.push({
+          label: "Acconto Iniziale",
+          amount: depositAmount,
+          percentage: depositPercentage,
+          dueDate: "All'accettazione del preventivo",
+          description: "Anticipo per approvvigionamento materiali e avvio cantiere.",
+          isPaid: false,
+          isMilestoneDeposit: true
+        });
+      }
+
+      // Collect all assigned itemKeys
+      const allAssignedKeys = new Set(tappe.flatMap(t => t.itemKeys || []));
+
+      // Build milestone payment rows
+      tappe.forEach((tappa, idx) => {
+        const tappaTotal = (tappa.itemKeys || []).reduce((acc, key) => acc + itemAmount(key), 0);
+        const adjustedAmount = depositPercentage > 0 ? tappaTotal * (1 - depositPercentage / 100) : tappaTotal;
+        // Get title from the titleItemKey
+        const titleResolved = tappa.titleItemKey ? resolveKey(tappa.titleItemKey) : null;
+        const titleLabel = titleResolved?.item?.description || tappa.customLabel || `Tappa ${idx + 1}`;
+        const itemCount = (tappa.itemKeys || []).length;
+
+        plan.push({
+          label: titleLabel,
+          amount: adjustedAmount,
+          dueDate: `Al completamento di: ${titleLabel}`,
+          description: `Pagamento per ${itemCount} ${itemCount === 1 ? 'voce' : 'voci'} al termine della lavorazione.`,
+          isPaid: false,
+          isMilestone: true,
+          tappaId: tappa.id
+        });
+      });
+
+      // Saldo finale: all items NOT assigned to any tappa
+      const allItemKeys = sections.flatMap(s => (s.items || []).map(i => `${s.id}::${i.id}`));
+      const unassignedKeys = allItemKeys.filter(k => !allAssignedKeys.has(k));
+      const unassignedTotal = unassignedKeys.reduce((acc, key) => acc + itemAmount(key), 0);
+      const adjustedUnassigned = depositPercentage > 0 ? unassignedTotal * (1 - depositPercentage / 100) : unassignedTotal;
+
+      if (adjustedUnassigned > 0.01) {
+        plan.push({
+          label: "Saldo Finale",
+          amount: adjustedUnassigned,
+          dueDate: "A completamento di tutti i lavori",
+          description: "Saldo per le lavorazioni rimanenti.",
+          isPaid: false
+        });
+      }
     } else {
       plan = [
         { label: "Soluzione Unica", amount: total, dueDate: "A fine lavori", description: "Nessun acconto richiesto. Pagamento integrale al termine della posa.", isPaid: false }
@@ -411,7 +484,7 @@ export default function EditQuotePage() { // Non servono più props qui
       { label: "Acconto Iniziale", percentage: 30, dueDate: "All'accettazione del preventivo", description: "Necessario per l'approvvigionamento materiali e pianificazione cantiere." },
       { label: "A Metà Lavori", percentage: 30, dueDate: "Al raggiungimento del 50% dei lavori", description: "Stato avanzamento lavori intermedio." },
       { label: "Saldo Finale", percentage: 40, dueDate: "A fine lavori", description: "Da versare a seguito del collaudo finale." }
-    ]} : {};
+    ]} : type === 'MILESTONES' ? { milestoneConfig: typeof value === 'object' && value !== null ? value : { depositPercentage: 0, tappe: [] } } : {};
     setEditingQuote(prev => ({ ...prev, paymentPlan: plan, paymentType: type, paymentValue: value, ...extra }));
   };
 
@@ -779,22 +852,24 @@ export default function EditQuotePage() { // Non servono più props qui
             <Label>Strategia Pagamenti</Label>
 
             {/* Modifica grid-cols-3 in grid-cols-2 o grid-cols-4 per farci stare il nuovo bottone */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-6">
               {[
                 { id: 'SINGLE', label: 'Saldo Unico' },
                 { id: 'PERCENTAGE', label: 'Acconto %' },
                 { id: 'FIXED', label: 'Acconto Fisso' },
                 { id: 'FIRST_DAY', label: 'Fine 1° Giorno' },
+                { id: 'MILESTONES', label: '🔨 Per Lavorazione' },
                 { id: 'CUSTOM', label: 'Rate Personalizzate' }
               ].map(type => (
                 <button
                   key={type.id}
-                  // Quando clicchi il nuovo bottone, impostiamo un valore di default (es. 1000€)
                   onClick={() => {
                     if (type.id === 'CUSTOM') {
-                      // Se ci sono già tranches personalizzate salvate, usale
                       const existingTranches = editingQuote.customTranches;
                       setPaymentStrategy(type.id, existingTranches || null);
+                    } else if (type.id === 'MILESTONES') {
+                      const existingConfig = editingQuote.milestoneConfig;
+                      setPaymentStrategy(type.id, existingConfig || { depositPercentage: 0, tappe: [] });
                     } else {
                       setPaymentStrategy(type.id, type.id === 'PERCENTAGE' ? 30 : 1000);
                     }
@@ -848,6 +923,276 @@ export default function EditQuotePage() { // Non servono più props qui
                 </p>
               </div>
             )}
+
+            {/* --- EDITOR PAGAMENTO PER LAVORAZIONE (MILESTONES) --- */}
+            {editingQuote.paymentType === 'MILESTONES' && (() => {
+              const config = editingQuote.milestoneConfig || { depositPercentage: 0, tappe: [] };
+              const tappe = config.tappe || [];
+              const sections = editingQuote.sections || [];
+              const fmtCur = (v) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v);
+
+              // Flatten all items with keys
+              const allItems = sections.flatMap(s =>
+                (s.items || []).map(i => ({
+                  key: `${s.id}::${i.id}`,
+                  sectionId: s.id,
+                  sectionTitle: s.title,
+                  itemId: i.id,
+                  description: i.description,
+                  amount: (parseFloat(i.price) || 0) * (parseFloat(i.quantity) || 0),
+                  quantity: i.quantity,
+                  unit: i.unit,
+                  price: i.price
+                }))
+              );
+
+              // Which items are already assigned to any tappa
+              const assignedKeys = new Set(tappe.flatMap(t => t.itemKeys || []));
+              const unassignedItems = allItems.filter(i => !assignedKeys.has(i.key));
+              const unassignedTotal = unassignedItems.reduce((a, i) => a + i.amount, 0);
+
+              const updateConfig = (newConfig) => setPaymentStrategy('MILESTONES', newConfig);
+
+              return (
+                <div className="mb-4 space-y-4">
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    Crea le <strong>tappe di pagamento</strong>: per ogni tappa scegli le voci che il cliente pagherà al termine della lavorazione principale. Le voci non assegnate finiranno nel Saldo Finale.
+                  </p>
+
+                  {/* ── Acconto iniziale (opzionale) ── */}
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1 block">
+                          Acconto iniziale (opzionale)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <StyledInput
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={config.depositPercentage || 0}
+                            onChange={(e) => updateConfig({ ...config, depositPercentage: parseFloat(e.target.value) || 0 })}
+                            placeholder="0"
+                            className="!w-24"
+                          />
+                          <span className="text-sm text-amber-600 font-medium">% del totale</span>
+                        </div>
+                      </div>
+                      {(config.depositPercentage || 0) > 0 && (
+                        <div className="text-right">
+                          <p className="text-[10px] text-amber-600 font-medium">Acconto</p>
+                          <p className="text-sm font-bold text-amber-800">
+                            {fmtCur(liveSummary.total * ((config.depositPercentage || 0) / 100))}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Tappe esistenti ── */}
+                  {tappe.map((tappa, tIdx) => {
+                    const tappaItems = (tappa.itemKeys || []).map(k => allItems.find(i => i.key === k)).filter(Boolean);
+                    const tappaTotal = tappaItems.reduce((a, i) => a + i.amount, 0);
+                    const depPct = config.depositPercentage || 0;
+                    const adjustedTotal = depPct > 0 ? tappaTotal * (1 - depPct / 100) : tappaTotal;
+                    const titleItem = tappa.titleItemKey ? allItems.find(i => i.key === tappa.titleItemKey) : null;
+
+                    // Items available to add to THIS tappa = unassigned + items already in this tappa (for display)
+                    const tappaKeySet = new Set(tappa.itemKeys || []);
+                    const availableForThisTappa = allItems.filter(i => !assignedKeys.has(i.key) || tappaKeySet.has(i.key));
+
+                    return (
+                      <div key={tappa.id} className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden shadow-sm">
+                        {/* Tappa header */}
+                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-lg bg-black text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                              {tIdx + 1}
+                            </span>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">
+                                {titleItem?.description || `Tappa ${tIdx + 1}`}
+                              </p>
+                              <p className="text-[10px] text-gray-400">
+                                {tappaItems.length} {tappaItems.length === 1 ? 'voce' : 'voci'} • {fmtCur(adjustedTotal)}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const newTappe = tappe.filter((_, i) => i !== tIdx);
+                              updateConfig({ ...config, tappe: newTappe });
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                            title="Elimina tappa"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          {/* Items in this tappa */}
+                          {tappaItems.length > 0 && (
+                            <div className="space-y-1">
+                              {tappaItems.map(item => {
+                                const isTitleItem = tappa.titleItemKey === item.key;
+                                return (
+                                  <div
+                                    key={item.key}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+                                      isTitleItem ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-transparent'
+                                    }`}
+                                  >
+                                    {/* Set as title button */}
+                                    <button
+                                      onClick={() => {
+                                        const newTappe = [...tappe];
+                                        newTappe[tIdx] = { ...newTappe[tIdx], titleItemKey: item.key };
+                                        updateConfig({ ...config, tappe: newTappe });
+                                      }}
+                                      className={`w-4 h-4 rounded-full border-2 shrink-0 transition-all flex items-center justify-center ${
+                                        isTitleItem ? 'border-blue-500 bg-blue-500' : 'border-gray-300 hover:border-blue-400'
+                                      }`}
+                                      title="Imposta come lavorazione principale (titolo)"
+                                    >
+                                      {isTitleItem && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </button>
+
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-xs truncate ${isTitleItem ? 'font-bold text-blue-900' : 'text-gray-700'}`}>
+                                        {item.description}
+                                      </p>
+                                      <p className="text-[10px] text-gray-400">{item.sectionTitle}</p>
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-900 tabular-nums shrink-0">{fmtCur(item.amount)}</span>
+
+                                    {/* Remove from tappa */}
+                                    <button
+                                      onClick={() => {
+                                        const newKeys = (tappa.itemKeys || []).filter(k => k !== item.key);
+                                        const newTitleKey = tappa.titleItemKey === item.key ? (newKeys[0] || '') : tappa.titleItemKey;
+                                        const newTappe = [...tappe];
+                                        newTappe[tIdx] = { ...newTappe[tIdx], itemKeys: newKeys, titleItemKey: newTitleKey };
+                                        updateConfig({ ...config, tappe: newTappe });
+                                      }}
+                                      className="p-1 rounded hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Add items dropdown */}
+                          {unassignedItems.length > 0 && (
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">
+                                + Aggiungi voci a questa tappa
+                              </label>
+                              <div className="max-h-[200px] overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
+                                {/* Group unassigned by section */}
+                                {sections.map(section => {
+                                  const sectionUnassigned = unassignedItems.filter(i => i.sectionId === section.id && !tappaKeySet.has(i.key));
+                                  if (sectionUnassigned.length === 0) return null;
+                                  return (
+                                    <div key={section.id}>
+                                      <div className="px-3 py-1.5 bg-gray-50/50">
+                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">{section.title}</span>
+                                      </div>
+                                      {sectionUnassigned.map(item => (
+                                        <button
+                                          key={item.key}
+                                          onClick={() => {
+                                            const newKeys = [...(tappa.itemKeys || []), item.key];
+                                            const newTitleKey = tappa.titleItemKey || item.key; // first item becomes title by default
+                                            const newTappe = [...tappe];
+                                            newTappe[tIdx] = { ...newTappe[tIdx], itemKeys: newKeys, titleItemKey: newTitleKey };
+                                            updateConfig({ ...config, tappe: newTappe });
+                                          }}
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-blue-50 transition-colors"
+                                        >
+                                          <Plus size={12} className="text-gray-300 shrink-0" />
+                                          <span className="text-xs text-gray-700 flex-1 truncate">{item.description}</span>
+                                          <span className="text-[10px] text-gray-400 tabular-nums shrink-0">{fmtCur(item.amount)}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {tappaItems.length > 0 && (
+                            <p className="text-[10px] text-blue-500 italic">
+                              ● = lavorazione principale (titolo della tappa). Al suo completamento il cliente paga tutte le voci di questa tappa.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* ── Add new tappa ── */}
+                  <button
+                    onClick={() => {
+                      const newTappa = {
+                        id: `tappa-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                        titleItemKey: '',
+                        itemKeys: []
+                      };
+                      updateConfig({ ...config, tappe: [...tappe, newTappa] });
+                    }}
+                    className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-xs hover:border-black hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                  >
+                    <Plus size={14} /> Aggiungi Tappa di Pagamento
+                  </button>
+
+                  {/* ── Summary: unassigned items → saldo finale ── */}
+                  {unassignedItems.length > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                          Saldo Finale (voci non assegnate)
+                        </span>
+                        <span className="text-sm font-bold text-gray-900 tabular-nums">
+                          {fmtCur((() => {
+                            const dep = config.depositPercentage || 0;
+                            return dep > 0 ? unassignedTotal * (1 - dep / 100) : unassignedTotal;
+                          })())}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {unassignedItems.slice(0, 5).map(item => (
+                          <p key={item.key} className="text-[10px] text-gray-400 truncate">
+                            • {item.description} — {fmtCur(item.amount)}
+                          </p>
+                        ))}
+                        {unassignedItems.length > 5 && (
+                          <p className="text-[10px] text-gray-400 italic">...e altre {unassignedItems.length - 5} voci</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {unassignedItems.length === 0 && tappe.length > 0 && (
+                    <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-4 py-3 border border-emerald-100">
+                      <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-xs font-medium text-emerald-700">Tutte le voci sono assegnate a una tappa — nessun saldo finale.</span>
+                    </div>
+                  )}
+
+                  <p className="text-[10px] text-gray-400 italic">
+                    Il piano di pagamento viene aggiornato automaticamente in base alle voci assegnate.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* --- EDITOR RATE PERSONALIZZATE --- */}
             {editingQuote.paymentType === 'CUSTOM' && (

@@ -194,7 +194,7 @@ export default function ContractPage() {
               return (
                 <div key={section.id || sIdx} data-pdf-block={`lavori-${sIdx}`}>
                   {/* ── Section header ── */}
-                  <div className="mb-3">
+                  <div>
                     <div className="flex items-baseline justify-between gap-6">
                       <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                         <span className="text-[12px] text-[#c7c7cc] font-medium tabular-nums mr-2">{String(sIdx + 1).padStart(2, '0')}</span>
@@ -209,20 +209,6 @@ export default function ContractPage() {
                         {section.description}
                       </p>
                     )}
-                  </div>
-
-                  {/* ── Items ── */}
-                  <div className="ml-7">
-                    {section.items?.map((item, iIdx) => {
-                      const itemTotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
-                      return (
-                        <div key={item.id || iIdx} className={`flex items-baseline justify-between gap-4 py-[9px] ${iIdx > 0 ? 'border-t border-[#f5f5f7]' : ''}`}>
-                          <span className="text-[11.5px] text-[#48484a] leading-snug flex-1 min-w-0">{item.description || '—'}</span>
-                          <span className="text-[10px] text-[#a1a1a6] tabular-nums whitespace-nowrap shrink-0">{item.quantity} {item.unit}</span>
-                          <span className="text-[11.5px] font-medium text-[#1d1d1f] tabular-nums tracking-tight w-[68px] text-right shrink-0">{formatCurrency(itemTotal)}</span>
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
               );
