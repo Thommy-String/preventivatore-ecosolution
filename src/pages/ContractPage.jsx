@@ -153,62 +153,72 @@ export default function ContractPage() {
         {/* ═══ ART. 1 — OGGETTO DEI LAVORI (Dettagliato) ═══ */}
         <div data-pdf-block="art-1-lavori" className="px-12 md:px-16 py-10 border-b border-gray-100">
           <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 1 — Oggetto dei lavori</h3>
-          <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-6">
+          <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-8">
             L'Appaltatore si impegna ad eseguire a regola d'arte le seguenti lavorazioni:
           </p>
 
-          {quote.sections?.map((section, sIdx) => {
-            const sectionTotal = section.items?.reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseFloat(i.quantity) || 0)), 0) || 0;
-            return (
-              <div key={section.id || sIdx} data-pdf-block={`lavori-${sIdx}`} className="mb-6 last:mb-0">
-                {/* Section header */}
-                <div className="flex items-baseline justify-between gap-4 border-b border-gray-200 pb-2 mb-3">
-                  <h4 className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
-                    {String(sIdx + 1).padStart(2, '0')}. {section.title}
-                  </h4>
-                  <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight shrink-0">
-                    {formatCurrency(sectionTotal)}
-                  </span>
-                </div>
+          <div className="space-y-10">
+            {quote.sections?.map((section, sIdx) => {
+              const sectionTotal = section.items?.reduce((a, i) => a + ((parseFloat(i.price) || 0) * (parseFloat(i.quantity) || 0)), 0) || 0;
+              return (
+                <div key={section.id || sIdx} data-pdf-block={`lavori-${sIdx}`}>
+                  {/* ── Section title ── */}
+                  <div className="flex items-baseline justify-between gap-6 mb-2">
+                    <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                      <span className="text-[#a1a1a6] font-normal mr-1.5">{String(sIdx + 1).padStart(2, '0')}</span>
+                      {section.title}
+                    </h4>
+                    <span className="text-[15px] font-bold text-[#1d1d1f] tabular-nums tracking-tight shrink-0">
+                      {formatCurrency(sectionTotal)}
+                    </span>
+                  </div>
 
-                {/* Items detail */}
-                <div className="space-y-0">
-                  {section.items?.map((item, iIdx) => {
-                    const itemTotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
-                    return (
-                      <div key={item.id || iIdx} className="flex items-start justify-between gap-4 py-2 border-b border-gray-50 last:border-b-0">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12px] text-[#1d1d1f] leading-relaxed">
-                            {item.description || '—'}
-                          </p>
-                          <p className="text-[10px] text-[#a1a1a6] mt-0.5 tabular-nums">
-                            {item.quantity} {item.unit} × {formatCurrency(item.price)}
-                          </p>
+                  {/* ── Section description (full written text) ── */}
+                  {section.description && (
+                    <p className="text-[11px] text-[#a1a1a6] leading-[1.7] mb-4 max-w-[90%]">
+                      {section.description}
+                    </p>
+                  )}
+
+                  {/* ── Items table — minimal Apple style ── */}
+                  <div className="border-t border-[#e8e8ed]">
+                    {section.items?.map((item, iIdx) => {
+                      const itemTotal = (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+                      return (
+                        <div key={item.id || iIdx} className="flex items-baseline justify-between gap-4 py-[10px] border-b border-[#f0f0f3]">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[12px] text-[#424245] leading-snug">{item.description || '—'}</span>
+                          </div>
+                          <div className="flex items-baseline gap-5 shrink-0">
+                            <span className="text-[10px] text-[#a1a1a6] tabular-nums tracking-tight whitespace-nowrap">
+                              {item.quantity} {item.unit} &times; {formatCurrency(item.price)}
+                            </span>
+                            <span className="text-[12px] font-medium text-[#1d1d1f] tabular-nums tracking-tight w-[72px] text-right">
+                              {formatCurrency(itemTotal)}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-[12px] font-medium text-[#1d1d1f] tabular-nums shrink-0">
-                          {formatCurrency(itemTotal)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
-          {/* Riepilogo totali con IVA */}
-          <div data-pdf-block="totali-iva" className="mt-8 border-t-2 border-gray-200 pt-5">
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-[12px] text-[#86868b] font-medium">Imponibile</span>
-              <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums">{formatCurrency(netto)}</span>
+          {/* ── Riepilogo totali con IVA ── */}
+          <div data-pdf-block="totali-iva" className="mt-10 pt-5 border-t-[1.5px] border-[#1d1d1f]/10">
+            <div className="flex items-baseline justify-between py-[6px]">
+              <span className="text-[11px] text-[#86868b] font-medium tracking-wide uppercase">Imponibile</span>
+              <span className="text-[14px] text-[#1d1d1f] font-semibold tabular-nums tracking-tight">{formatCurrency(netto)}</span>
             </div>
-            <div className="flex items-baseline justify-between py-1.5">
-              <span className="text-[12px] text-[#86868b] font-medium">IVA ({vatRate}%)</span>
-              <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums">{formatCurrency(ivaAmount)}</span>
+            <div className="flex items-baseline justify-between py-[6px]">
+              <span className="text-[11px] text-[#86868b] font-medium tracking-wide uppercase">IVA ({vatRate}%)</span>
+              <span className="text-[14px] text-[#1d1d1f] font-semibold tabular-nums tracking-tight">{formatCurrency(ivaAmount)}</span>
             </div>
-            <div className="flex items-baseline justify-between py-2 border-t border-gray-200 mt-1">
-              <span className="text-[14px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale Complessivo</span>
-              <span className="text-[20px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
+            <div className="flex items-baseline justify-between pt-4 mt-2 border-t border-[#1d1d1f]/10">
+              <span className="text-[13px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale Complessivo</span>
+              <span className="text-[22px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
             </div>
           </div>
         </div>
