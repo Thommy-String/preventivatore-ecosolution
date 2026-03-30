@@ -18,6 +18,7 @@ const DEFAULT_ARTICLES = [
   { id: 'art-garanzia', title: 'Garanzia', body: `L'Appaltatore garantisce la corretta esecuzione delle opere a regola d'arte, conformemente alle normative vigenti. La garanzia sui lavori eseguiti ha durata di 24 (ventiquattro) mesi dalla data di fine lavori, salvo diverso accordo scritto.\n\nLa garanzia non copre difetti derivanti da uso improprio, mancata manutenzione ordinaria, interventi di terzi non autorizzati, o eventi di forza maggiore.\n\nSono esclusi dalla garanzia i normali fenomeni di assestamento, ritiro e movimenti naturali dei materiali.` },
   { id: 'art-responsabilita', title: 'Responsabilità e assicurazione', body: `L'Appaltatore è coperto da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente contratto.` },
   { id: 'art-smaltimento', title: 'Smaltimento materiali', body: `Lo smaltimento dei materiali di risulta è incluso nel corrispettivo solo se espressamente indicato nelle singole voci del preventivo. In caso contrario, lo smaltimento sarà a carico del Committente.` },
+  { id: 'art-accettazione', title: 'Accettazione lavori e obbligo di pagamento', body: `Al completamento di ciascuna fase di lavorazione ovvero dell'intero intervento, il Committente è tenuto a verificare i lavori eseguiti ed a procedere al pagamento delle somme dovute secondo il piano concordato all'Art. 3, entro i termini ivi stabiliti.\n\nIl pagamento non può essere sospeso, ritardato o rifiutato dal Committente per ragioni estetiche, di gradimento personale o per contestazioni su dettagli esecutivi che non configurino un vizio grave ai sensi dell'art. 1668 c.c.\n\nEventuali difformità, difetti o riserve dovranno essere comunicati per iscritto dall'Committente entro 8 (otto) giorni dalla conclusione dei lavori o della singola fase. L'Appaltatore si impegna a valutare e, ove fondato, a rimediare alle difformità segnalate in tempi ragionevoli.\n\nLa segnalazione di difformità non esonera in alcun caso il Committente dall'obbligo di pagamento nei termini previsti. Le eventuali rettifiche verranno eseguite dall'Appaltatore a propria cura e spese, ove riconducibili a propria responsabilità, senza che ciò comporti alcuna riduzione o dilazione del corrispettivo pattuito.\n\nIl mancato pagamento entro i termini, anche in presenza di contestazioni, costituirà inadempimento contrattuale e darà diritto all'Appaltatore di sospendere ogni ulteriore intervento, ivi comprese le eventuali opere di rettifica, sino al completo saldo delle somme dovute.` },
   { id: 'art-recesso', title: 'Risoluzione e recesso', body: `Ciascuna parte potrà recedere dal presente contratto con comunicazione scritta inviata all'altra parte con un preavviso di almeno 15 (quindici) giorni.\n\nIn caso di recesso unilaterale da parte del Committente dopo l'accettazione, l'Appaltatore avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.\n\nL'Appaltatore potrà risolvere il contratto in caso di morosità del Committente superiore a 30 giorni dalla scadenza di qualsivoglia rata, previa diffida scritta.` },
   { id: 'art-privacy', title: 'Trattamento dei dati personali', body: `Le parti si impegnano reciprocamente al trattamento dei dati personali in conformità al Regolamento UE 2016/679 (GDPR). I dati raccolti saranno utilizzati esclusivamente per le finalità connesse all'esecuzione del presente contratto e degli obblighi di legge.` },
   { id: 'art-foro', title: 'Foro competente', body: `Per qualsiasi controversia derivante dall'interpretazione o dall'esecuzione del presente contratto, sarà competente in via esclusiva il Foro del luogo di residenza o domicilio del Committente, ai sensi dell'art. 33, comma 2, lettera u) del D.Lgs. 206/2005 (Codice del Consumo).` },
@@ -25,7 +26,7 @@ const DEFAULT_ARTICLES = [
 ];
 
 // Articles whose clauses require double-signature under Art. 1341/1342 C.C.
-const VESSATORIE_IDS = ['art-garanzia', 'art-recesso'];
+const VESSATORIE_IDS = ['art-garanzia', 'art-accettazione', 'art-recesso'];
 
 export default function ContractPage() {
   const { quoteId } = useParams();
@@ -60,6 +61,8 @@ export default function ContractPage() {
   // ─── Read contractData (or use defaults) ───
   const cd = quote.contractData || {};
   const vatRate = cd.vatRate ?? 10;
+  // If articles were saved via EditContractPage, respect them exactly (no forced merge).
+  // Defaults are only used if no contractData has ever been saved.
   const articles = cd.articles?.length ? cd.articles : DEFAULT_ARTICLES;
 
   const contractNumber = quote.quoteNumber || quoteId.slice(-4).toUpperCase();
@@ -216,16 +219,18 @@ export default function ContractPage() {
           </div>
 
           {/* ── Riepilogo totali con IVA ── */}
-          <div data-pdf-block="totali-iva" className="mt-10 pt-5 border-t-[1.5px] border-[#1d1d1f]/10">
-            <div className="flex items-baseline justify-between py-[6px]">
-              <span className="text-[11px] text-[#86868b] font-medium tracking-wide uppercase">Imponibile</span>
+          <div data-pdf-block="totali-iva" className="mt-10 pt-6 border-t border-[#e8e8ed]">
+            <div className="flex items-baseline justify-between py-[5px]">
+              <span className="text-[11px] text-[#86868b] font-medium tracking-wide">Imponibile</span>
               <span className="text-[14px] text-[#1d1d1f] font-semibold tabular-nums tracking-tight">{formatCurrency(netto)}</span>
             </div>
-            <div className="flex items-baseline justify-between py-[6px]">
-              <span className="text-[11px] text-[#86868b] font-medium tracking-wide uppercase">IVA ({vatRate}%)</span>
-              <span className="text-[14px] text-[#1d1d1f] font-semibold tabular-nums tracking-tight">{formatCurrency(ivaAmount)}</span>
-            </div>
-            <div className="flex items-baseline justify-between pt-4 mt-2 border-t border-[#1d1d1f]/10">
+            {vatRate > 0 && (
+              <div className="flex items-baseline justify-between py-[5px]">
+                <span className="text-[11px] text-[#a1a1a6] font-medium tracking-wide">IVA ({vatRate}%)</span>
+                <span className="text-[13px] text-[#a1a1a6] font-medium tabular-nums tracking-tight">{formatCurrency(ivaAmount)}</span>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between pt-4 mt-3 border-t border-[#1d1d1f]/10">
               <span className="text-[13px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale Complessivo</span>
               <span className="text-[22px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
             </div>
@@ -252,37 +257,37 @@ export default function ContractPage() {
         <div data-pdf-block="art-3-pagamenti" className="px-12 md:px-16 py-10 border-b border-gray-100">
           <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 3 — Modalità di pagamento</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-6">
-            Il pagamento del corrispettivo avverrà secondo il seguente piano:
+            Il pagamento del corrispettivo avverrà secondo il seguente piano{vatRate > 0 ? ` (importi comprensivi di IVA al ${vatRate}%)` : ''}:
           </p>
 
           {quote.paymentPlan && quote.paymentPlan.length > 0 ? (
-            <div className="rounded-2xl border border-[#e8e8ed] overflow-hidden">
-              {/* Table header */}
-              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3 bg-[#fafafa] border-b border-[#e8e8ed]">
-                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em]">Descrizione</span>
-                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em] text-right w-14">Quota</span>
-                <span className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em] text-right w-24">Importo</span>
-              </div>
+            <div className="space-y-0">
               {/* Rows */}
-              {quote.paymentPlan.map((p, idx) => (
-                <div key={idx} data-pdf-block={`contract-payment-${idx}`} className={`grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-4 items-baseline ${idx < quote.paymentPlan.length - 1 ? 'border-b border-[#f0f0f3]' : ''}`}>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#1d1d1f] leading-snug">{p.label}</p>
-                    {p.dueDate && <p className="text-[11px] text-[#a1a1a6] mt-0.5">{p.dueDate}</p>}
+              {quote.paymentPlan.map((p, idx) => {
+                const nettoAmount = p.amount || 0;
+                const lordoPayment = nettoAmount + nettoAmount * (vatRate / 100);
+                return (
+                  <div key={idx} data-pdf-block={`contract-payment-${idx}`} className={`flex items-baseline justify-between gap-4 py-4 ${idx > 0 ? 'border-t border-[#f0f0f3]' : ''}`}>
+                    <div className="flex items-baseline gap-3 min-w-0 flex-1">
+                      <span className="text-[11px] text-[#c7c7cc] font-medium tabular-nums shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-[#1d1d1f] leading-snug">{p.label}</p>
+                        {p.dueDate && <p className="text-[10.5px] text-[#a1a1a6] mt-0.5 leading-snug">{p.dueDate}</p>}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">{formatCurrency(lordoPayment)}</span>
+                      {vatRate > 0 && (
+                        <p className="text-[10px] text-[#a1a1a6] tabular-nums mt-0.5">di cui IVA {formatCurrency(nettoAmount * (vatRate / 100))}</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-[#86868b] tabular-nums text-right w-14 shrink-0">
-                    {p.percentage ? `${p.percentage}%` : '—'}
-                  </span>
-                  <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight text-right w-24 shrink-0">
-                    {formatCurrency(p.amount)}
-                  </span>
-                </div>
-              ))}
-              {/* Total row */}
-              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-5 py-3.5 bg-[#fafafa] border-t border-[#e8e8ed]">
-                <span className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">Totale</span>
-                <span className="text-[11px] text-[#86868b] tabular-nums text-right w-14">100%</span>
-                <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight text-right w-24">{formatCurrency(netto)}</span>
+                );
+              })}
+              {/* Total */}
+              <div className="flex items-baseline justify-between pt-4 mt-1 border-t border-[#1d1d1f]/10">
+                <span className="text-[12px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale</span>
+                <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
               </div>
             </div>
           ) : (

@@ -44,6 +44,11 @@ const DEFAULT_ARTICLES = [
     body: `Lo smaltimento dei materiali di risulta è incluso nel corrispettivo solo se espressamente indicato nelle singole voci del preventivo. In caso contrario, lo smaltimento sarà a carico del Committente.`
   },
   {
+    id: 'art-accettazione',
+    title: 'Accettazione lavori e obbligo di pagamento',
+    body: `Al completamento di ciascuna fase di lavorazione ovvero dell'intero intervento, il Committente è tenuto a verificare i lavori eseguiti ed a procedere al pagamento delle somme dovute secondo il piano concordato all'Art. 3, entro i termini ivi stabiliti.\n\nIl pagamento non può essere sospeso, ritardato o rifiutato dal Committente per ragioni estetiche, di gradimento personale o per contestazioni su dettagli esecutivi che non configurino un vizio grave ai sensi dell'art. 1668 c.c.\n\nEventuali difformità, difetti o riserve dovranno essere comunicati per iscritto dall'Committente entro 8 (otto) giorni dalla conclusione dei lavori o della singola fase. L'Appaltatore si impegna a valutare e, ove fondato, a rimediare alle difformità segnalate in tempi ragionevoli.\n\nLa segnalazione di difformità non esonera in alcun caso il Committente dall'obbligo di pagamento nei termini previsti. Le eventuali rettifiche verranno eseguite dall'Appaltatore a propria cura e spese, ove riconducibili a propria responsabilità, senza che ciò comporti alcuna riduzione o dilazione del corrispettivo pattuito.\n\nIl mancato pagamento entro i termini, anche in presenza di contestazioni, costituirà inadempimento contrattuale e darà diritto all'Appaltatore di sospendere ogni ulteriore intervento, ivi comprese le eventuali opere di rettifica, sino al completo saldo delle somme dovute.`
+  },
+  {
     id: 'art-recesso',
     title: 'Risoluzione e recesso',
     body: `Ciascuna parte potrà recedere dal presente contratto con comunicazione scritta inviata all'altra parte con un preavviso di almeno 15 (quindici) giorni.\n\nIn caso di recesso unilaterale da parte del Committente dopo l'accettazione, l'Appaltatore avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.\n\nL'Appaltatore potrà risolvere il contratto in caso di morosità del Committente superiore a 30 giorni dalla scadenza di qualsivoglia rata, previa diffida scritta.`
@@ -262,8 +267,8 @@ export default function EditContractPage() {
               <p className="text-[9px] font-black text-gray-400 uppercase tracking-wider mb-1">IVA ({vatRate}%)</p>
               <p className="text-lg font-bold text-gray-900 tabular-nums">{formatCurrency(totals.iva)}</p>
             </div>
-            <div className="bg-black rounded-xl p-3">
-              <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider mb-1">Totale con IVA</p>
+            <div className="bg-[#1d1d1f] rounded-xl p-3">
+              <p className="text-[9px] font-black text-[#86868b] uppercase tracking-wider mb-1">Totale con IVA</p>
               <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(totals.lordo)}</p>
             </div>
           </div>
@@ -352,6 +357,38 @@ export default function EditContractPage() {
               <Plus size={12} /> Aggiungi articolo
             </button>
           </div>
+
+          {/* Banner: missing default articles */}
+          {(() => {
+            const currentIds = new Set(articles.map(a => a.id));
+            const missing = DEFAULT_ARTICLES.filter(a => !currentIds.has(a.id));
+            if (!missing.length) return null;
+            return (
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-[11px] font-bold text-amber-700 mb-2">Articoli standard non presenti nel contratto:</p>
+                <div className="space-y-1.5">
+                  {missing.map(a => (
+                    <div key={a.id} className="flex items-center justify-between gap-2">
+                      <span className="text-[12px] text-amber-800 font-medium">{a.title}</span>
+                      <button
+                        onClick={() => {
+                          const finaliIdx = articles.findIndex(x => x.id === 'art-finali');
+                          if (finaliIdx >= 0) {
+                            setArticles(prev => { const r = [...prev]; r.splice(finaliIdx, 0, { ...a }); return r; });
+                          } else {
+                            setArticles(prev => [...prev, { ...a }]);
+                          }
+                        }}
+                        className="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-md transition-all shrink-0"
+                      >
+                        + Aggiungi
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="space-y-4">
             {articles.map((art, idx) => (

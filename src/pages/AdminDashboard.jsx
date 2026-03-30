@@ -2,23 +2,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { doc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { 
-  Loader2, Plus, FileText, Edit, Eye, Trash2, 
-  Search, TrendingUp, Users, ChevronRight, ScrollText 
-} from 'lucide-react';
+import { Loader2, Plus, Search, X } from 'lucide-react';
 
-// --- SOTTO-COMPONENTI UI ---
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm flex items-center gap-5">
-    <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center text-white`}>
-      <Icon size={24} />
-    </div>
-    <div>
-      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{title}</p>
-      <p className="text-2xl font-black text-gray-900">{value}</p>
-    </div>
-  </div>
-);
+const formatCurrency = (v) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
+
+const STATUS_MAP = {
+  blue:   { label: 'Nuovo',        bg: 'bg-blue-50',    text: 'text-blue-600',    dot: 'bg-blue-500' },
+  yellow: { label: 'In lavorazione', bg: 'bg-amber-50',   text: 'text-amber-600',   dot: 'bg-amber-500' },
+  green:  { label: 'Completato',    bg: 'bg-emerald-50', text: 'text-emerald-600', dot: 'bg-emerald-500' },
+  red:    { label: 'Annullato',     bg: 'bg-red-50',     text: 'text-red-500',     dot: 'bg-red-500' },
+};
 
 export default function AdminDashboard() {
   const [quotes, setQuotes] = useState([]);
@@ -27,225 +20,192 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    fetchQuotes();
-  }, []);
+  useEffect(() => { fetchQuotes(); }, []);
 
   const fetchQuotes = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "preventivi"));
-      const quotesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Ordiniamo per data di creazione decrescente
+      const quotesList = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setQuotes(quotesList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    } catch (error) {
-      console.error("Errore:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { console.error("Errore:", error); }
+    finally { setLoading(false); }
   };
 
-  // --- LOGICA CANCELLAZIONE ---
   const handleDelete = async (id, name) => {
-    if (window.confirm(`Sei sicuro di voler eliminare il preventivo per "${name}"? L'azione è irreversibile.`)) {
-      try {
-        await deleteDoc(doc(db, "preventivi", id));
-        setQuotes(quotes.filter(q => q.id !== id));
-      } catch (error) {
-        alert("Errore durante l'eliminazione.");
-      }
+    if (window.confirm(`Eliminare definitivamente il preventivo per "${name}"?`)) {
+      try { await deleteDoc(doc(db, "preventivi", id)); setQuotes(q => q.filter(x => x.id !== id)); }
+      catch { alert("Errore durante l'eliminazione."); }
     }
   };
 
   const handleCreateQuote = async (e) => {
     e.preventDefault();
-    if (!clientName || !projectName) return;
+    if (!clientName.trim() || !projectName.trim()) return;
     setCreating(true);
-
     const newId = `prev-${Date.now()}`;
     const newQuote = {
-      id: newId,
-      clientName,
-      projectName,
+      id: newId, clientName: clientName.trim(), projectName: projectName.trim(),
       date: new Date().toLocaleDateString('it-IT'),
-      sections: [],
-      summary: { subtotal: 0, total: 0 },
-      statusText: 'Nuovo',
-      statusColor: 'blue',
+      sections: [], summary: { subtotal: 0, total: 0 },
+      statusText: 'Nuovo', statusColor: 'blue',
       createdAt: new Date().toISOString()
     };
-
     try {
       await setDoc(doc(db, "preventivi", newId), newQuote);
-      setQuotes([newQuote, ...quotes]);
-      setClientName('');
-      setProjectName('');
-    } catch (error) {
-      alert("Errore nel salvataggio.");
-    } finally {
-      setCreating(false);
-    }
+      setQuotes(q => [newQuote, ...q]);
+      setClientName(''); setProjectName(''); setShowForm(false);
+    } catch { alert("Errore nel salvataggio."); }
+    finally { setCreating(false); }
   };
 
-  // --- FILTRO LIVE ---
   const filteredQuotes = useMemo(() => {
-    return quotes.filter(q => 
-      q.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      q.projectName?.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!searchTerm.trim()) return quotes;
+    const s = searchTerm.toLowerCase();
+    return quotes.filter(q =>
+      q.clientName?.toLowerCase().includes(s) ||
+      q.projectName?.toLowerCase().includes(s)
     );
   }, [searchTerm, quotes]);
 
-  // --- CALCOLO STATISTICHE ---
-  const stats = useMemo(() => {
-    const totalVolume = quotes.reduce((acc, q) => acc + (q.summary?.subtotal || 0), 0);
-    return {
-      count: quotes.length,
-      volume: new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(totalVolume),
-      active: quotes.filter(q => q.statusColor === 'blue' || q.statusColor === 'yellow').length
-    };
-  }, [quotes]);
-
   return (
-    <div className="bg-[#F8F9FA] min-h-screen font-sans pb-20">
-      
-      {/* Header Soft Blur */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white">
-                <TrendingUp size={20} />
-              </div>
-              <h1 className="text-xl font-black tracking-tight text-gray-900">PreventivoPro <span className="text-blue-600">Admin</span></h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="hidden md:block text-right">
-                <p className="text-xs font-bold text-gray-400 uppercase">Benvenuto</p>
-                <p className="text-sm font-bold text-gray-900">Pro Casa Parquet</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-                <img src="https://ui-avatars.com/api/?name=Pro+Casa&background=0D8ABC&color=fff" alt="avatar" />
-              </div>
-            </div>
+    <div className="bg-[#f5f5f7] min-h-screen font-sans selection:bg-blue-100">
+
+      {/* ═══ Header ═══ */}
+      <header className="bg-white/80 backdrop-blur-xl border-b border-[#e8e8ed] sticky top-0 z-30">
+        <div className="max-w-3xl mx-auto px-5 h-[52px] flex items-center justify-between">
+          <h1 className="text-[15px] font-bold text-[#1d1d1f] tracking-tight">
+            ECO SOLUTION <span className="text-[#86868b] font-normal">Preventivi</span>
+          </h1>
+          <button onClick={() => setShowForm(f => !f)}
+            className="flex items-center gap-1.5 h-8 px-4 text-[13px] font-semibold text-white bg-[#0071e3] rounded-full hover:bg-[#0077ED] active:scale-[0.97] transition-all">
+            {showForm ? <X size={14} /> : <Plus size={14} />}
+            {showForm ? 'Chiudi' : 'Nuovo'}
+          </button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6 space-y-8">
-        
-        {/* STATS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard title="Preventivi Totali" value={stats.count} icon={FileText} color="bg-blue-500" />
-          <StatCard title="Volume d'affari" value={stats.volume} icon={TrendingUp} color="bg-emerald-500" />
-          <StatCard title="In Lavorazione" value={stats.active} icon={Users} color="bg-amber-500" />
+      <main className="max-w-3xl mx-auto px-5 pt-5 pb-20">
+
+        {/* ═══ Form creazione (slide-down) ═══ */}
+        {showForm && (
+          <form onSubmit={handleCreateQuote}
+            className="bg-white rounded-2xl p-5 border border-[#e8e8ed] mb-5 animate-in slide-in-from-top">
+            <p className="text-[13px] font-semibold text-[#1d1d1f] mb-3">Crea nuovo preventivo</p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Nome cliente"
+                className="flex-1 bg-[#f5f5f7] border border-[#e8e8ed] rounded-xl px-4 py-2.5 text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none" />
+              <input value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="Nome progetto"
+                className="flex-1 bg-[#f5f5f7] border border-[#e8e8ed] rounded-xl px-4 py-2.5 text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none" />
+              <button type="submit" disabled={creating || !clientName.trim() || !projectName.trim()}
+                className="h-[42px] px-6 text-[13px] font-semibold text-white bg-[#1d1d1f] rounded-xl hover:bg-[#333] active:scale-[0.97] transition-all disabled:opacity-40 shrink-0 flex items-center justify-center gap-2">
+                {creating ? <Loader2 className="animate-spin" size={14}/> : <Plus size={14} />} Crea
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══ Barra ricerca ═══ */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6] pointer-events-none" size={15} />
+          <input type="text" placeholder="Cerca cliente o progetto..."
+            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white/80 backdrop-blur border border-[#e8e8ed] rounded-xl text-[13px] text-[#1d1d1f] placeholder:text-[#c7c7cc] focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3]/40 outline-none transition-all" />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#c7c7cc] hover:text-[#86868b] transition-colors">
+              <X size={14} />
+            </button>
+          )}
         </div>
 
-        {/* CREAZIONE RAPIDA */}
-        <section className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm">
-          <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-2">
-            <Plus className="text-blue-500" /> Nuovo Preventivo Rapido
-          </h2>
-          <form onSubmit={handleCreateQuote} className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1 w-full">
-              <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-2 block">Cliente</label>
-              <input
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                placeholder="Nome e Cognome"
-                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-            <div className="flex-1 w-full">
-              <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-2 block">Progetto</label>
-              <input
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                placeholder="Es. Posa Rovere Spina"
-                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-            <button 
-              type="submit" 
-              disabled={creating} 
-              className="bg-black text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {creating ? <Loader2 className="animate-spin" size={18}/> : <Plus size={18} />}
-              Crea Progetto
-            </button>
-          </form>
-        </section>
-
-        {/* LISTA E RICERCA */}
-        <section className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-2xl font-black text-gray-900">Archivio Digitale</h2>
-            
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input 
-                type="text"
-                placeholder="Cerca cliente o progetto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 pr-6 py-3 bg-white border border-gray-200 rounded-2xl text-sm w-full md:w-80 shadow-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
-              />
-            </div>
+        {/* ═══ Lista ═══ */}
+        {loading ? (
+          <div className="flex flex-col items-center py-24 text-[#a1a1a6] gap-3">
+            <Loader2 className="animate-spin" size={24} />
+            <p className="text-[13px]">Caricamento…</p>
           </div>
+        ) : filteredQuotes.length === 0 ? (
+          <div className="text-center py-24">
+            <p className="text-[15px] font-medium text-[#86868b]">
+              {searchTerm ? 'Nessun risultato' : 'Nessun preventivo ancora'}
+            </p>
+            {!searchTerm && (
+              <button onClick={() => setShowForm(true)} className="mt-3 text-[13px] font-semibold text-[#0071e3] hover:underline">
+                Crea il primo →
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredQuotes.map(quote => {
+              const status = STATUS_MAP[quote.statusColor] || STATUS_MAP.blue;
+              const amount = quote.summary?.subtotal || 0;
 
-          {loading ? (
-             <div className="flex flex-col items-center py-20 text-gray-400 gap-4">
-                <Loader2 className="animate-spin" size={40} />
-                <p className="font-bold">Sincronizzazione Cloud...</p>
-             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredQuotes.map(quote => (
-                <div key={quote.id} className="group bg-white p-2 pl-6 rounded-[28px] border border-gray-100 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all flex flex-col md:flex-row justify-between items-center gap-4">
-                  
-                  {/* Info */}
-                  <div className="py-4">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-black text-gray-900">{quote.projectName}</h3>
-                      {/* Badge Stato (Dinamico) */}
-                      <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${
-                        quote.statusColor === 'green' ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-100 text-blue-600'
-                      }`}>
-                        {quote.statusText || 'Inviato'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-400 mt-1 font-bold uppercase tracking-wider">
-                        <span>{quote.clientName}</span>
-                        <span className="text-gray-200">•</span>
-                        <span>{quote.date}</span>
-                    </div>
-                  </div>
+              return (
+                <div key={quote.id} className="bg-white rounded-2xl border border-[#e8e8ed] hover:border-[#c7c7cc] hover:shadow-sm transition-all overflow-hidden">
 
-                  {/* Azioni */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 md:bg-transparent rounded-[24px] w-full md:w-auto">
-                    <Link to={`/admin/quote/${quote.id}/edit`} className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                      <Edit size={20} />
+                  {/* ── Top: info clickabile ── */}
+                  <Link to={`/admin/quote/${quote.id}/edit`} className="block px-5 pt-4 pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-[15px] font-semibold text-[#1d1d1f] leading-tight truncate">
+                          {quote.projectName}
+                        </h3>
+                        <p className="text-[12px] text-[#86868b] mt-1 leading-snug">
+                          {quote.clientName}
+                          <span className="mx-1.5 text-[#e8e8ed]">·</span>
+                          {quote.date}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {amount > 0 && (
+                          <p className="text-[15px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">
+                            {formatCurrency(amount)}
+                          </p>
+                        )}
+                        <div className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md ${status.bg}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                          <span className={`text-[10px] font-semibold ${status.text}`}>
+                            {quote.statusText || status.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* ── Bottom: azioni con label testuali ── */}
+                  <div className="flex items-center border-t border-[#f0f0f3] divide-x divide-[#f0f0f3]">
+                    <Link to={`/admin/quote/${quote.id}/edit`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#86868b] hover:text-[#0071e3] hover:bg-blue-50/50 transition-all">
+                      Modifica
                     </Link>
-                    <Link to={`/quote/${quote.id}`} className="p-3 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all">
-                      <Eye size={20} />
+                    <Link to={`/quote/${quote.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#86868b] hover:text-emerald-600 hover:bg-emerald-50/50 transition-all">
+                      Preventivo
                     </Link>
-                    <Link to={`/contract/${quote.id}`} className="p-3 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all" title="Genera Contratto">
-                      <ScrollText size={20} />
+                    <Link to={`/contract/${quote.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#86868b] hover:text-purple-600 hover:bg-purple-50/50 transition-all">
+                      Contratto
                     </Link>
-                    <button 
-                      onClick={() => handleDelete(quote.id, quote.clientName)}
-                      className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                    >
-                      <Trash2 size={20} />
+                    <button onClick={() => handleDelete(quote.id, quote.clientName)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#c7c7cc] hover:text-red-500 hover:bg-red-50/50 transition-all">
+                      Elimina
                     </button>
-                    <div className="h-8 w-[1px] bg-gray-200 mx-2 hidden md:block"></div>
-                    <Link to={`/admin/quote/${quote.id}/edit`} className="hidden md:flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 text-xs font-black text-gray-900 hover:bg-black hover:text-white transition-all">
-                      Gestisci <ChevronRight size={14} />
-                    </Link>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ─── Counter ─── */}
+        {!loading && filteredQuotes.length > 0 && (
+          <p className="text-center text-[11px] text-[#c7c7cc] pt-6 pb-2">
+            {filteredQuotes.length} preventiv{filteredQuotes.length === 1 ? 'o' : 'i'}
+            {searchTerm && ` per "${searchTerm}"`}
+          </p>
+        )}
       </main>
     </div>
   );
