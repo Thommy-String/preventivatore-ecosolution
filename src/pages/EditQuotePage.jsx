@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, } from 'react-router-dom';
 import { doc, getDoc, setDoc } from "firebase/firestore"; // <--- NUOVI IMPORT FIREBASE
 import { db } from "../firebase"; // <--- IL TUO FILE DI COLLEGAMENTO
 import {
-  LinkIcon, Save, Trash2, Plus, Copy, ArrowUp, ArrowDown, X, Image as ImageIcon, Calculator
+  LinkIcon, Save, Trash2, Plus, Copy, ArrowUp, ArrowDown, X, Image as ImageIcon, Calculator, Package
 } from 'lucide-react';
 
 import { DEFAULT_TEAM } from '../config/defaultTeam';
@@ -443,18 +443,38 @@ export default function EditQuotePage() { // Non servono più props qui
       tappe.forEach((tappa, idx) => {
         const tappaTotal = (tappa.itemKeys || []).reduce((acc, key) => acc + itemAmount(key), 0);
         const adjustedAmount = depositPercentage > 0 ? tappaTotal * (1 - depositPercentage / 100) : tappaTotal;
-        // Get title from the titleItemKey
+        const isMaterial = tappa.isMaterialTappa || false;
+        // Get title from the titleItemKey or customLabel for material tapppe
         const titleResolved = tappa.titleItemKey ? resolveKey(tappa.titleItemKey) : null;
-        const titleLabel = titleResolved?.item?.description || tappa.customLabel || `Tappa ${idx + 1}`;
+        const titleLabel = tappa.customLabel || titleResolved?.item?.description || `Tappa ${idx + 1}`;
         const itemCount = (tappa.itemKeys || []).length;
+
+        // Build material items detail list for ALL tappe (always array, never undefined for Firebase)
+        // For material tappe: full detail. For lavorazione tappe: used in contract to list included items.
+        const tappaItemsList = (tappa.itemKeys || []).map(key => {
+          const { item } = resolveKey(key);
+          return item ? {
+            description: item.description,
+            amount: (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0),
+            quantity: parseFloat(item.quantity) || 0,
+            unit: item.unit || '',
+            unitPrice: parseFloat(item.price) || 0
+          } : null;
+        }).filter(Boolean);
 
         plan.push({
           label: titleLabel,
           amount: adjustedAmount,
-          dueDate: `Al completamento di: ${titleLabel}`,
-          description: `Pagamento per ${itemCount} ${itemCount === 1 ? 'voce' : 'voci'} al termine della lavorazione.`,
+          dueDate: isMaterial
+            ? (tappa.customDueDate || `All'arrivo del materiale in magazzino`)
+            : `Al completamento di: ${titleLabel}`,
+          description: isMaterial
+            ? (tappa.customDescription || `Pagamento per fornitura materiale — da versare prima della consegna.`)
+            : `Pagamento per ${itemCount} ${itemCount === 1 ? 'voce' : 'voci'} al termine della lavorazione.`,
           isPaid: false,
           isMilestone: true,
+          isMaterialPayment: isMaterial,
+          materialItems: tappaItemsList,
           tappaId: tappa.id
         });
       });
@@ -489,6 +509,21 @@ export default function EditQuotePage() { // Non servono più props qui
   };
 
   // --- 2. SALVATAGGIO SU FIREBASE (Versione Debug) ---
+
+  // Helper: rimuove ricorsivamente tutte le chiavi con valore undefined
+  // Firebase rifiuta documenti che contengono undefined
+  const removeUndefined = (obj) => {
+    if (Array.isArray(obj)) return obj.map(removeUndefined);
+    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+      return Object.fromEntries(
+        Object.entries(obj)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, removeUndefined(v)])
+      );
+    }
+    return obj;
+  };
+
   const handleSave = async () => {
     if (!db) {
       alert("ERRORE GRAVE: Il database non è collegato.");
@@ -503,11 +538,11 @@ export default function EditQuotePage() { // Non servono più props qui
         vatPercentage: 0 // Impostiamo a 0 o rimuoviamo
       };
 
-      const quoteToSave = {
+      const quoteToSave = removeUndefined({
         ...editingQuote,
         summary: finalSummary,
         lastUpdated: new Date().toISOString()
-      };
+      });
 
       const docId = (quoteId && quoteId !== 'new') ? quoteId : `prev-${Date.now()}`;
       quoteToSave.id = docId;
@@ -1003,35 +1038,124 @@ export default function EditQuotePage() { // Non servono più props qui
                     const availableForThisTappa = allItems.filter(i => !assignedKeys.has(i.key) || tappaKeySet.has(i.key));
 
                     return (
-                      <div key={tappa.id} className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden shadow-sm">
+                      <div key={tappa.id} className={`rounded-2xl border-2 overflow-hidden shadow-sm ${
+                        tappa.isMaterialTappa 
+                          ? 'bg-gradient-to-br from-amber-50/50 to-orange-50/30 border-amber-200' 
+                          : 'bg-white border-gray-100'
+                      }`}>
                         {/* Tappa header */}
-                        <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-lg bg-black text-white text-[11px] font-bold flex items-center justify-center shrink-0">
-                              {tIdx + 1}
+                        <div className={`px-4 py-3 border-b flex items-center justify-between ${
+                          tappa.isMaterialTappa 
+                            ? 'bg-amber-50 border-amber-100' 
+                            : 'bg-gray-50 border-gray-100'
+                        }`}>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className={`w-7 h-7 rounded-lg text-[11px] font-bold flex items-center justify-center shrink-0 ${
+                              tappa.isMaterialTappa 
+                                ? 'bg-amber-500 text-white' 
+                                : 'bg-black text-white'
+                            }`}>
+                              {tappa.isMaterialTappa ? <Package size={13} /> : tIdx + 1}
                             </span>
-                            <div>
-                              <p className="text-sm font-bold text-gray-900">
-                                {titleItem?.description || `Tappa ${tIdx + 1}`}
+                            <div className="min-w-0">
+                              <p className={`text-sm font-bold truncate ${tappa.isMaterialTappa ? 'text-amber-900' : 'text-gray-900'}`}>
+                                {tappa.isMaterialTappa 
+                                  ? (tappa.customLabel || 'Fornitura Materiale') 
+                                  : (titleItem?.description || `Tappa ${tIdx + 1}`)}
                               </p>
                               <p className="text-[10px] text-gray-400">
                                 {tappaItems.length} {tappaItems.length === 1 ? 'voce' : 'voci'} • {fmtCur(adjustedTotal)}
+                                {tappa.isMaterialTappa && <span className="ml-1.5 text-amber-500 font-bold">📦 MATERIALE</span>}
                               </p>
                             </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              const newTappe = tappe.filter((_, i) => i !== tIdx);
-                              updateConfig({ ...config, tappe: newTappe });
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
-                            title="Elimina tappa"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Toggle Materiale */}
+                            <button
+                              onClick={() => {
+                                const newTappe = [...tappe];
+                                newTappe[tIdx] = { 
+                                  ...newTappe[tIdx], 
+                                  isMaterialTappa: !newTappe[tIdx].isMaterialTappa,
+                                  customLabel: !newTappe[tIdx].isMaterialTappa ? (newTappe[tIdx].customLabel || '') : newTappe[tIdx].customLabel,
+                                };
+                                updateConfig({ ...config, tappe: newTappe });
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                                tappa.isMaterialTappa 
+                                  ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600' 
+                                  : 'bg-white text-gray-400 border-gray-200 hover:border-amber-400 hover:text-amber-600'
+                              }`}
+                              title={tappa.isMaterialTappa ? 'Tappa Materiale (clicca per rendere lavorazione)' : 'Trasforma in Tappa Materiale'}
+                            >
+                              📦 {tappa.isMaterialTappa ? 'Materiale' : 'Mat.'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                const newTappe = tappe.filter((_, i) => i !== tIdx);
+                                updateConfig({ ...config, tappe: newTappe });
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                              title="Elimina tappa"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="p-4 space-y-3">
+                          {/* Campi personalizzabili per tappa materiale */}
+                          {tappa.isMaterialTappa && (
+                            <div className="bg-amber-50/60 rounded-xl p-3 border border-amber-100 space-y-2.5">
+                              <div>
+                                <label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1 block">
+                                  Nome Tappa Materiale
+                                </label>
+                                <StyledInput
+                                  value={tappa.customLabel || ''}
+                                  onChange={(e) => {
+                                    const newTappe = [...tappe];
+                                    newTappe[tIdx] = { ...newTappe[tIdx], customLabel: e.target.value };
+                                    updateConfig({ ...config, tappe: newTappe });
+                                  }}
+                                  placeholder="Es. Arrivo Pavimento Gres e Battiscopa"
+                                  className="!bg-white !border-amber-200 !text-amber-900 !font-bold"
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                <div>
+                                  <label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1 block">
+                                    Scadenza / Momento Pagamento
+                                  </label>
+                                  <StyledInput
+                                    value={tappa.customDueDate || ''}
+                                    onChange={(e) => {
+                                      const newTappe = [...tappe];
+                                      newTappe[tIdx] = { ...newTappe[tIdx], customDueDate: e.target.value };
+                                      updateConfig({ ...config, tappe: newTappe });
+                                    }}
+                                    placeholder="Es. All'arrivo in magazzino, prima della consegna"
+                                    className="!bg-white !border-amber-200"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1 block">
+                                    Descrizione (opzionale)
+                                  </label>
+                                  <StyledInput
+                                    value={tappa.customDescription || ''}
+                                    onChange={(e) => {
+                                      const newTappe = [...tappe];
+                                      newTappe[tIdx] = { ...newTappe[tIdx], customDescription: e.target.value };
+                                      updateConfig({ ...config, tappe: newTappe });
+                                    }}
+                                    placeholder="Es. Da versare prima della consegna del materiale"
+                                    className="!bg-white !border-amber-200"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {/* Items in this tappa */}
                           {tappaItems.length > 0 && (
                             <div className="space-y-1">
@@ -1137,19 +1261,39 @@ export default function EditQuotePage() { // Non servono più props qui
                   })}
 
                   {/* ── Add new tappa ── */}
-                  <button
-                    onClick={() => {
-                      const newTappa = {
-                        id: `tappa-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                        titleItemKey: '',
-                        itemKeys: []
-                      };
-                      updateConfig({ ...config, tappe: [...tappe, newTappa] });
-                    }}
-                    className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-xs hover:border-black hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
-                  >
-                    <Plus size={14} /> Aggiungi Tappa di Pagamento
-                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        const newTappa = {
+                          id: `tappa-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                          titleItemKey: '',
+                          itemKeys: [],
+                          isMaterialTappa: false
+                        };
+                        updateConfig({ ...config, tappe: [...tappe, newTappa] });
+                      }}
+                      className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 font-bold text-xs hover:border-black hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                    >
+                      <Plus size={14} /> Tappa Lavorazione
+                    </button>
+                    <button
+                      onClick={() => {
+                        const newTappa = {
+                          id: `tappa-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                          titleItemKey: '',
+                          itemKeys: [],
+                          isMaterialTappa: true,
+                          customLabel: '',
+                          customDueDate: "All'arrivo del materiale in magazzino",
+                          customDescription: 'Da versare prima della consegna del materiale.'
+                        };
+                        updateConfig({ ...config, tappe: [...tappe, newTappa] });
+                      }}
+                      className="w-full py-3 border-2 border-dashed border-amber-300 rounded-xl text-amber-500 font-bold text-xs hover:border-amber-500 hover:text-amber-700 hover:bg-amber-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                    >
+                      <Package size={14} /> Tappa Materiale 📦
+                    </button>
+                  </div>
 
                   {/* ── Summary: unassigned items → saldo finale ── */}
                   {unassignedItems.length > 0 && (

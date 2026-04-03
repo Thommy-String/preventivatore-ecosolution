@@ -262,32 +262,157 @@ export default function ContractPage() {
 
           {quote.paymentPlan && quote.paymentPlan.length > 0 ? (
             <div className="space-y-0">
-              {/* Rows */}
-              {quote.paymentPlan.map((p, idx) => {
+              {/* ── Tappe di lavorazione (standard) — con dettaglio voci ── */}
+              {quote.paymentPlan.filter(p => !p.isMaterialPayment).map((p, idx) => {
                 const nettoAmount = p.amount || 0;
                 const lordoPayment = nettoAmount + nettoAmount * (vatRate / 100);
+                const milestoneItems = p.materialItems || [];
                 return (
-                  <div key={idx} data-pdf-block={`contract-payment-${idx}`} className={`flex items-baseline justify-between gap-4 py-4 ${idx > 0 ? 'border-t border-[#f0f0f3]' : ''}`}>
-                    <div className="flex items-baseline gap-3 min-w-0 flex-1">
-                      <span className="text-[11px] text-[#c7c7cc] font-medium tabular-nums shrink-0">{String(idx + 1).padStart(2, '0')}</span>
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-[#1d1d1f] leading-snug">{p.label}</p>
-                        {p.dueDate && <p className="text-[10.5px] text-[#a1a1a6] mt-0.5 leading-snug">{p.dueDate}</p>}
+                  <div key={idx} data-pdf-block={`contract-payment-${idx}`} className={`py-5 ${idx > 0 ? 'border-t border-[#e8e8ed]' : ''}`}>
+                    <div className="flex items-baseline justify-between gap-4">
+                      <div className="flex items-baseline gap-3 min-w-0 flex-1">
+                        <span className="text-[11px] text-[#86868b] font-bold tabular-nums shrink-0">{String(idx + 1).padStart(2, '0')}</span>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-bold text-[#1d1d1f] leading-snug">{p.label}</p>
+                          {p.dueDate && <p className="text-[11px] text-[#636366] mt-0.5 leading-snug font-medium">{p.dueDate}</p>}
+                          {p.description && <p className="text-[11px] text-[#86868b] mt-1 leading-snug max-w-lg">{p.description}</p>}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">{formatCurrency(lordoPayment)}</span>
+                        {vatRate > 0 && (
+                          <p className="text-[10px] text-[#86868b] tabular-nums mt-0.5">di cui IVA {vatRate}%: {formatCurrency(nettoAmount * (vatRate / 100))}</p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[14px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">{formatCurrency(lordoPayment)}</span>
-                      {vatRate > 0 && (
-                        <p className="text-[10px] text-[#a1a1a6] tabular-nums mt-0.5">di cui IVA {formatCurrency(nettoAmount * (vatRate / 100))}</p>
-                      )}
-                    </div>
+                    {/* Dettaglio voci incluse nella tappa lavorazione (se milestone) */}
+                    {milestoneItems.length > 0 && (
+                      <div className="ml-7 mt-2.5 pl-3 border-l-2 border-[#e8e8ed] space-y-0">
+                        <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.12em] mb-1.5">Voci incluse in questa tappa</p>
+                        {milestoneItems.map((mi, miIdx) => {
+                          const miLordo = (mi.amount || 0) + (mi.amount || 0) * (vatRate / 100);
+                          return (
+                            <div key={miIdx} className="flex items-baseline justify-between gap-3 py-1">
+                              <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
+                                <span className="text-[9px] text-[#c7c7cc] shrink-0">—</span>
+                                <span className="text-[11px] text-[#636366] font-medium leading-snug">{mi.description}</span>
+                                {mi.quantity && mi.unit && (
+                                  <span className="text-[10px] text-[#a1a1a6] shrink-0">({mi.quantity} {mi.unit})</span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-[#636366] font-semibold tabular-nums shrink-0">{formatCurrency(miLordo)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              {/* Total */}
-              <div className="flex items-baseline justify-between pt-4 mt-1 border-t border-[#1d1d1f]/10">
-                <span className="text-[12px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale</span>
-                <span className="text-[15px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
+
+              {/* ── Tappe FORNITURA MATERIALE ── */}
+              {quote.paymentPlan.filter(p => p.isMaterialPayment).length > 0 && (
+                <div className="mt-8 pt-6 border-t border-[#e8e8ed]">
+
+                  {/* Descriptive intro for material payment section */}
+                  <div className="mb-5 px-5 py-4 rounded-xl bg-[#fffbeb] border border-[#f5e6b8]">
+                    <p className="text-[12px] text-[#78650d] leading-[1.8]">
+                      <strong className="text-[#92400e]">Tappe di fornitura materiale</strong> — Le voci seguenti riguardano l'acquisto e 
+                      l'approvvigionamento dei materiali necessari all'esecuzione dei lavori. Il pagamento di ciascuna tappa 
+                      di fornitura è dovuto al momento del ricevimento della merce presso il magazzino dell'Appaltatore, 
+                      <em> prima</em> della consegna in cantiere e della posa in opera. Tale anticipo consente all'Appaltatore di 
+                      procedere tempestivamente all'ordine e alla riserva dei materiali presso i fornitori, garantendo 
+                      la disponibilità e la continuità del cantiere.
+                    </p>
+                  </div>
+
+                  {(() => {
+                    const workCount = quote.paymentPlan.filter(p => !p.isMaterialPayment).length;
+                    return quote.paymentPlan.filter(p => p.isMaterialPayment).map((p, mIdx) => {
+                      const nettoAmount = p.amount || 0;
+                      const lordoPayment = nettoAmount + nettoAmount * (vatRate / 100);
+                      const items = p.materialItems || [];
+                      const displayIdx = workCount + mIdx;
+                      return (
+                        <div key={mIdx} data-pdf-block={`contract-material-${mIdx}`} className={`${mIdx > 0 ? 'mt-5' : ''}`}>
+                          <div className="border border-[#f0d78c] rounded-xl bg-gradient-to-br from-[#fffdf5] to-[#fef9e7] p-5 shadow-sm shadow-[#f5e6b8]/30">
+                            {/* Header con icona pacco */}
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                              <div className="flex items-start gap-3 min-w-0 flex-1">
+                                <div className="w-8 h-8 rounded-lg bg-[#fef3c7] flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-[14px]">📦</span>
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-[11px] text-[#92400e] font-bold tabular-nums shrink-0">{String(displayIdx + 1).padStart(2, '0')}</span>
+                                    <p className="text-[13px] font-bold text-[#1d1d1f] leading-snug">{p.label}</p>
+                                    <span className="bg-[#fef3c7] text-[#92400e] text-[7px] font-black uppercase tracking-[0.08em] px-1.5 py-[2px] rounded">Fornitura</span>
+                                  </div>
+                                  {p.dueDate && <p className="text-[11px] text-[#78650d] mt-0.5 leading-snug font-medium">{p.dueDate}</p>}
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[15px] font-bold text-[#1d1d1f] tabular-nums tracking-tight">{formatCurrency(lordoPayment)}</span>
+                                {vatRate > 0 && (
+                                  <p className="text-[10px] text-[#92400e]/70 tabular-nums mt-0.5">di cui IVA {vatRate}%: {formatCurrency(nettoAmount * (vatRate / 100))}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Dettaglio voci materiale */}
+                            {items.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-[#f0d78c]/60 space-y-0">
+                                <p className="text-[9px] font-black text-[#b08d24] uppercase tracking-[0.12em] mb-1.5">Dettaglio voci incluse</p>
+                                {items.map((mi, miIdx) => {
+                                  const miLordo = (mi.amount || 0) + (mi.amount || 0) * (vatRate / 100);
+                                  return (
+                                    <div key={miIdx} className="flex items-baseline justify-between gap-3 py-1">
+                                      <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
+                                        <span className="text-[9px] text-[#d4a843] shrink-0">—</span>
+                                        <span className="text-[11px] text-[#4a3f1e] font-medium leading-snug">{mi.description}</span>
+                                        {mi.quantity && mi.unit && (
+                                          <span className="text-[10px] text-[#8a7444] shrink-0">
+                                            ({mi.quantity} {mi.unit}{mi.unitPrice ? ` × ${formatCurrency(mi.unitPrice)}` : ''})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[11px] text-[#4a3f1e] font-semibold tabular-nums shrink-0">{formatCurrency(miLordo)}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Descrizione / nota */}
+                            {p.description && (
+                              <p className="text-[11px] text-[#8a7444] mt-3 pt-2 border-t border-[#f0d78c]/60 leading-[1.7] italic">
+                                {p.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
+
+              {/* Total con IVA e % */}
+              <div className="mt-6 pt-5 border-t border-[#e8e8ed]">
+                <div className="flex items-baseline justify-between py-1">
+                  <span className="text-[11px] text-[#636366] font-medium">Imponibile</span>
+                  <span className="text-[13px] text-[#1d1d1f] font-semibold tabular-nums tracking-tight">{formatCurrency(netto)}</span>
+                </div>
+                {vatRate > 0 && (
+                  <div className="flex items-baseline justify-between py-1">
+                    <span className="text-[11px] text-[#636366] font-medium">IVA ({vatRate}%)</span>
+                    <span className="text-[13px] text-[#636366] font-medium tabular-nums tracking-tight">{formatCurrency(ivaAmount)}</span>
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between pt-3 mt-2 border-t border-[#1d1d1f]/20">
+                  <span className="text-[13px] text-[#1d1d1f] font-black uppercase tracking-tight">Totale Pagamenti</span>
+                  <span className="text-[17px] text-[#1d1d1f] font-black tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
+                </div>
               </div>
             </div>
           ) : (
