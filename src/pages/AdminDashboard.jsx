@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { doc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Loader2, Plus, Search, X } from 'lucide-react';
+import { Loader2, Plus, Search, X, Copy } from 'lucide-react';
 
 const formatCurrency = (v) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
@@ -22,6 +22,12 @@ export default function AdminDashboard() {
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
+  // Duplicate modal state
+  const [dupModal, setDupModal] = useState(null);
+  const [dupClient, setDupClient] = useState('');
+  const [dupProject, setDupProject] = useState('');
+  const [duplicating, setDuplicating] = useState(false);
+
   useEffect(() => { fetchQuotes(); }, []);
 
   const fetchQuotes = async () => {
@@ -38,6 +44,43 @@ export default function AdminDashboard() {
       try { await deleteDoc(doc(db, "preventivi", id)); setQuotes(q => q.filter(x => x.id !== id)); }
       catch { alert("Errore durante l'eliminazione."); }
     }
+  };
+
+  const openDuplicateModal = (quote) => {
+    setDupClient(quote.clientName || '');
+    setDupProject(`${quote.projectName || ''} (Copia)`);
+    setDupModal({ quoteId: quote.id, originalClient: quote.clientName, originalProject: quote.projectName });
+  };
+
+  const handleDuplicate = async () => {
+    if (!dupClient.trim() || !dupProject.trim() || !dupModal) return;
+    setDuplicating(true);
+    try {
+      const docSnap = await getDoc(doc(db, "preventivi", dupModal.quoteId));
+      if (!docSnap.exists()) { alert("Preventivo originale non trovato."); setDuplicating(false); return; }
+      const originalData = docSnap.data();
+      const newId = `prev-${Date.now()}`;
+      const duplicatedQuote = {
+        ...originalData,
+        id: newId,
+        clientName: dupClient.trim(),
+        projectName: dupProject.trim(),
+        date: new Date().toLocaleDateString('it-IT'),
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+        statusText: 'Nuovo',
+        statusColor: 'blue',
+      };
+      if (duplicatedQuote.paymentPlan) {
+        duplicatedQuote.paymentPlan = duplicatedQuote.paymentPlan.map(p => ({ ...p, isPaid: false }));
+      }
+      await setDoc(doc(db, "preventivi", newId), duplicatedQuote);
+      setQuotes(q => [{ ...duplicatedQuote }, ...q]);
+      setDupModal(null); setDupClient(''); setDupProject('');
+    } catch (error) {
+      console.error("Errore duplicazione:", error);
+      alert("Errore durante la duplicazione.");
+    } finally { setDuplicating(false); }
   };
 
   const handleCreateQuote = async (e) => {
@@ -71,6 +114,51 @@ export default function AdminDashboard() {
 
   return (
     <div className="bg-[#f5f5f7] min-h-screen font-sans selection:bg-blue-100">
+
+      {/* ═══ Modal Duplica ═══ */}
+      {dupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !duplicating && setDupModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <button onClick={() => !duplicating && setDupModal(null)} className="absolute top-4 right-4 text-[#c7c7cc] hover:text-[#86868b] transition-colors">
+              <X size={18} />
+            </button>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Copy size={18} className="text-[#0071e3]" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold text-[#1d1d1f]">Duplica preventivo</h3>
+                <p className="text-[12px] text-[#86868b]">da: {dupModal.originalClient} — {dupModal.originalProject}</p>
+              </div>
+            </div>
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider mb-1 block">Nuovo cliente</label>
+                <input value={dupClient} onChange={e => setDupClient(e.target.value)} placeholder="Nome cliente" autoFocus
+                  className="w-full bg-[#f5f5f7] border border-[#e8e8ed] rounded-xl px-4 py-2.5 text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none" />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wider mb-1 block">Nuovo progetto</label>
+                <input value={dupProject} onChange={e => setDupProject(e.target.value)} placeholder="Nome progetto"
+                  className="w-full bg-[#f5f5f7] border border-[#e8e8ed] rounded-xl px-4 py-2.5 text-[13px] text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:ring-2 focus:ring-[#0071e3]/20 focus:border-[#0071e3] outline-none"
+                  onKeyDown={e => { if (e.key === 'Enter' && dupClient.trim() && dupProject.trim()) handleDuplicate(); }} />
+              </div>
+            </div>
+            <div className="flex gap-2.5">
+              <button onClick={() => !duplicating && setDupModal(null)}
+                className="flex-1 py-2.5 text-[13px] font-semibold text-[#86868b] bg-[#f5f5f7] rounded-xl hover:bg-[#e8e8ed] transition-all">
+                Annulla
+              </button>
+              <button onClick={handleDuplicate} disabled={duplicating || !dupClient.trim() || !dupProject.trim()}
+                className="flex-1 py-2.5 text-[13px] font-semibold text-white bg-[#0071e3] rounded-xl hover:bg-[#0077ED] active:scale-[0.97] transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                {duplicating ? <Loader2 className="animate-spin" size={14} /> : <Copy size={14} />}
+                Duplica
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ Header ═══ */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-[#e8e8ed] sticky top-0 z-30">
@@ -188,6 +276,10 @@ export default function AdminDashboard() {
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#86868b] hover:text-purple-600 hover:bg-purple-50/50 transition-all">
                       Contratto
                     </Link>
+                    <button onClick={() => openDuplicateModal(quote)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#86868b] hover:text-[#0071e3] hover:bg-blue-50/50 transition-all">
+                      <Copy size={11} /> Duplica
+                    </button>
                     <button onClick={() => handleDelete(quote.id, quote.clientName)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[#c7c7cc] hover:text-red-500 hover:bg-red-50/50 transition-all">
                       Elimina
