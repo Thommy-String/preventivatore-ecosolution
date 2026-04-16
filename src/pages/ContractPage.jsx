@@ -151,24 +151,44 @@ export default function ContractPage() {
                 <div className="mt-3 space-y-2.5">
                   <div className="flex items-baseline gap-2">
                     <span className="text-[11px] font-semibold text-[#1d1d1f] shrink-0">C.F.*</span>
-                    <div className="flex-1 border-b border-[#1d1d1f]/30 pb-0.5 min-h-[18px]"></div>
+                    {cd.clientCF ? (
+                      <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{cd.clientCF}</span>
+                    ) : (
+                      <div className="flex-1 border-b border-[#1d1d1f]/30 pb-0.5 min-h-[18px]"></div>
+                    )}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-[11px] text-[#86868b] shrink-0">P.IVA</span>
-                    <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    {cd.clientPIVA ? (
+                      <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{cd.clientPIVA}</span>
+                    ) : (
+                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    )}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-[11px] text-[#86868b] shrink-0">Residenza</span>
-                    <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    {cd.clientResidenza ? (
+                      <span className="text-[12px] text-[#1d1d1f] font-medium">{cd.clientResidenza}</span>
+                    ) : (
+                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[11px] text-[#86868b] shrink-0">Tel</span>
-                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                      <span className="text-[10px] text-[#86868b] shrink-0">Tel</span>
+                      {cd.clientTel ? (
+                        <span className="text-[10px] text-[#636366] font-medium">{cd.clientTel}</span>
+                      ) : (
+                        <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                      )}
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[11px] text-[#86868b] shrink-0">Email</span>
-                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                      <span className="text-[10px] text-[#86868b] shrink-0">Email</span>
+                      {cd.clientEmail ? (
+                        <span className="text-[10px] text-[#636366] font-medium">{cd.clientEmail}</span>
+                      ) : (
+                        <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                      )}
                     </div>
                   </div>
                 </div>

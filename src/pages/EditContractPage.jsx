@@ -100,6 +100,13 @@ export default function EditContractPage() {
   const [pagamentiText, setPagamentiText] = useState('');
   const [articles, setArticles] = useState([]);
 
+  // Client data for contract
+  const [clientCF, setClientCF] = useState('');
+  const [clientPIVA, setClientPIVA] = useState('');
+  const [clientResidenza, setClientResidenza] = useState('');
+  const [clientTel, setClientTel] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+
   // ─── Load from Firebase ───
   useEffect(() => {
     const load = async () => {
@@ -129,6 +136,13 @@ export default function EditContractPage() {
         setPagamentiText(cd.pagamentiText ||
           `I pagamenti dovranno essere effettuati a mezzo bonifico bancario sulle coordinate indicate in calce al presente contratto. In caso di mancato o ritardato pagamento, l'Appaltatore si riserva il diritto di sospendere l'esecuzione dei lavori e di applicare gli interessi moratori previsti dal D.Lgs. 231/2002.`
         );
+
+        // Load client data
+        setClientCF(cd.clientCF || '');
+        setClientPIVA(cd.clientPIVA || '');
+        setClientResidenza(cd.clientResidenza || '');
+        setClientTel(cd.clientTel || '');
+        setClientEmail(cd.clientEmail || '');
 
       } catch (error) {
         console.error("Errore caricamento:", error);
@@ -181,6 +195,11 @@ export default function EditContractPage() {
         corrispettivoText,
         pagamentiText,
         articles,
+        clientCF,
+        clientPIVA,
+        clientResidenza,
+        clientTel,
+        clientEmail,
         lastUpdated: new Date().toISOString()
       };
 
@@ -270,6 +289,67 @@ export default function EditContractPage() {
             <div className="bg-[#1d1d1f] rounded-xl p-3">
               <p className="text-[9px] font-black text-[#86868b] uppercase tracking-wider mb-1">Totale con IVA</p>
               <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(totals.lordo)}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ═══ DATI COMMITTENTE ═══ */}
+        <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h2 className="text-sm font-black text-gray-900 mb-1">👤 Dati Committente</h2>
+          <p className="text-xs text-gray-400 mb-4">Compila i dati fiscali del cliente. Appariranno nel contratto stampabile.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Codice Fiscale *</Label>
+              <input
+                type="text"
+                value={clientCF}
+                onChange={(e) => setClientCF(e.target.value.toUpperCase())}
+                placeholder="Es. RSSMRA85M01H501Z"
+                maxLength={16}
+                className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none uppercase tracking-wider font-mono"
+              />
+            </div>
+            <div>
+              <Label>Partita IVA (se applicabile)</Label>
+              <input
+                type="text"
+                value={clientPIVA}
+                onChange={(e) => setClientPIVA(e.target.value)}
+                placeholder="Es. 01234567890"
+                maxLength={11}
+                className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none font-mono tracking-wider"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Residenza / Domicilio</Label>
+              <input
+                type="text"
+                value={clientResidenza}
+                onChange={(e) => setClientResidenza(e.target.value)}
+                placeholder="Es. Via Roma 1, 20100 Milano (MI)"
+                className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <Label>Telefono</Label>
+              <input
+                type="tel"
+                value={clientTel}
+                onChange={(e) => setClientTel(e.target.value)}
+                placeholder="Es. +39 333 1234567"
+                className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <input
+                type="email"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="Es. mario.rossi@email.com"
+                className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+              />
             </div>
           </div>
         </section>
