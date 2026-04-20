@@ -228,9 +228,7 @@ export default function ContractPage() {
                       </span>
                     </div>
                     {section.description && (
-                      <p className="text-[11px] text-[#a1a1a6] leading-[1.7] mt-1.5 ml-7">
-                        {section.description}
-                      </p>
+                      <div className="text-[11px] text-[#a1a1a6] leading-[1.7] mt-1.5 ml-7 [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_li]:py-0.5 [&_p]:my-0.5 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
                     )}
                   </div>
                 </div>

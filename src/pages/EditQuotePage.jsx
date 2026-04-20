@@ -13,6 +13,7 @@ import PaymentPlan from '../components/PaymentPlan';
 import TeamEditor from '../components/TeamEditor';
 import MaterialsEditor from '../components/MaterialsEditor';
 import SectionMaterialsEditor from '../components/SectionMaterialsEditor';
+import RichTextEditor from '../components/RichTextEditor';
 
 // --- Componenti UI Helpers ---
 const Label = ({ children }) => (
@@ -276,11 +277,12 @@ export default function EditQuotePage() { // Non servono più props qui
 
   const addItem = (sectionIndex) => {
     const newItem = {
-      id: generateUniqueId('item'), // Usa il nuovo generatore
+      id: generateUniqueId('item'),
       description: '',
       quantity: 1,
       unit: 'pz',
-      price: 0
+      price: 0,
+      originalPrice: ''
     };
     setEditingQuote(prev => {
       const newSections = [...prev.sections];
@@ -797,7 +799,7 @@ export default function EditQuotePage() { // Non servono più props qui
                 <div className="p-6 space-y-6">
                   <div>
                     <Label>Descrizione</Label>
-                    <StyledTextArea name="description" value={section.description} onChange={(e) => handleSectionChange(sIndex, e)} placeholder="Descrivi i lavori..." />
+                    <RichTextEditor value={section.description} onChange={(html) => { const e = { target: { name: 'description', value: html } }; handleSectionChange(sIndex, e); }} placeholder="Descrivi i lavori..." />
                   </div>
 
                   <div>
@@ -840,6 +842,7 @@ export default function EditQuotePage() { // Non servono più props qui
                           <div className="w-20"><StyledInput name="quantity" type="number" value={item.quantity} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="Qtà" /></div>
                           <div className="w-20"><StyledInput name="unit" value={item.unit} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="UdM" /></div>
                           <div className="w-28"><StyledInput name="price" type="number" value={item.price} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="€" /></div>
+                          <div className="w-28"><StyledInput name="originalPrice" type="number" value={item.originalPrice || ''} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="€ orig." className="!text-red-400 !line-through !placeholder-red-300" /></div>
                           <button onClick={() => deleteItem(sIndex, iIndex)} className="mt-2 text-gray-300 hover:text-red-500 transition-colors"><X size={20} /></button>
                         </div>
                       ))}

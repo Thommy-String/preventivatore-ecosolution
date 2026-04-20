@@ -315,6 +315,11 @@ export default function QuotePage() {
                 <div className="border-t border-[#e8e8ed]">
                   {quote.sections.map((section, sIdx) => {
                     const sectionTotal = section.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                    const sectionOriginalTotal = section.items.reduce((acc, item) => {
+                      const op = parseFloat(item.originalPrice);
+                      return acc + ((op > 0 ? op : item.price) * item.quantity);
+                    }, 0);
+                    const sectionHasDiscount = sectionOriginalTotal > sectionTotal + 0.01;
                     const totalQty = section.items.reduce((acc, item) => acc + parseFloat(item.quantity || 0), 0);
                     const mainUnit = section.items.length > 0 ? section.items[0].unit : '';
 
@@ -329,6 +334,11 @@ export default function QuotePage() {
                           </div>
                           {/* Right: price + quantity */}
                           <div className="shrink-0 text-right">
+                            {sectionHasDiscount && (
+                              <span className="text-[13px] text-[#ff3b30] line-through tabular-nums tracking-tight opacity-70 mr-2">
+                                {formatCurrency(sectionOriginalTotal)}
+                              </span>
+                            )}
                             <span className="text-[16px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">
                               {formatCurrency(sectionTotal)}
                             </span>
@@ -347,9 +357,23 @@ export default function QuotePage() {
                   <span className="text-[17px] md:text-[19px] text-[#1d1d1f] font-bold tracking-tight">
                     Totale Preventivo
                   </span>
-                  <span className="text-[26px] md:text-[32px] text-[#1d1d1f] font-bold tabular-nums tracking-tight text-right">
-                    {formatCurrency(quote.summary.subtotal)}
-                  </span>
+                  <div className="text-right">
+                    {(() => {
+                      const originalTotal = quote.sections.reduce((acc, s) => acc + s.items.reduce((a, i) => {
+                        const op = parseFloat(i.originalPrice);
+                        return a + ((op > 0 ? op : i.price) * i.quantity);
+                      }, 0), 0);
+                      const hasDiscount = originalTotal > quote.summary.subtotal + 0.01;
+                      return hasDiscount ? (
+                        <span className="text-[16px] md:text-[18px] text-[#ff3b30] line-through tabular-nums tracking-tight opacity-70 mr-3">
+                          {formatCurrency(originalTotal)}
+                        </span>
+                      ) : null;
+                    })()}
+                    <span className="text-[26px] md:text-[32px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">
+                      {formatCurrency(quote.summary.subtotal)}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-[12px] text-[#86868b] mt-1.5 text-right">
                   * al netto di IVA

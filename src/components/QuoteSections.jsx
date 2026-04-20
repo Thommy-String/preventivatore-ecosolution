@@ -127,9 +127,7 @@ export default function QuoteSections({ sections }) {
                                     {section.title}
                                 </h2>
                                 {section.description && (
-                                    <p className="text-[15px] leading-relaxed text-[#86868b] max-w-2xl mt-2">
-                                        {section.description}
-                                    </p>
+                                    <div className="text-[15px] leading-relaxed text-[#86868b] max-w-2xl mt-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2 [&_li]:py-0.5 [&_p]:my-1 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
                                 )}
                             </div>
                         </div>
@@ -168,9 +166,7 @@ export default function QuoteSections({ sections }) {
                                 >
                                     {/* Sinistra: Descrizione + dettaglio quantità */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[14px] leading-snug text-[#1d1d1f] font-medium">
-                                            {item.description}
-                                        </p>
+                                        <div className="text-[14px] leading-snug text-[#1d1d1f] font-medium" dangerouslySetInnerHTML={{ __html: item.description }} />
                                         <p className="text-[11px] text-[#a1a1a6] mt-1 tabular-nums">
                                             {item.quantity} {item.unit} × {formatCurrency(item.price)}
                                         </p>
@@ -178,6 +174,11 @@ export default function QuoteSections({ sections }) {
 
                                     {/* Destra: Totale voce */}
                                     <div className="shrink-0 text-right pt-0.5">
+                                        {item.originalPrice && parseFloat(item.originalPrice) > 0 && (
+                                            <span className="text-[12px] text-[#ff3b30] line-through tabular-nums mr-2 opacity-70">
+                                                {formatCurrency(parseFloat(item.originalPrice) * item.quantity)}
+                                            </span>
+                                        )}
                                         <span className="text-[14px] font-semibold text-[#1d1d1f] tabular-nums">
                                             {formatCurrency(item.price * item.quantity)}
                                         </span>
