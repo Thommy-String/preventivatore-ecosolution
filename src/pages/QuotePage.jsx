@@ -62,7 +62,7 @@ export default function QuotePage() {
       <main ref={printRef} className="max-w-[960px] mx-auto bg-white min-h-[1000px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.06)] sm:rounded-[32px] overflow-hidden relative print:max-w-full print:shadow-none print:rounded-none">
 
         {/* --- BANNER AZIENDALE ELEGANTE & RESPONSIVE --- */}
-        <div data-pdf-block="banner" className="bg-white border-b border-gray-100">
+        <div data-pdf-block="banner" className="bg-white border-b border-gray-100 print:break-inside-avoid">
           
           {/* TOP ROW: Logo + Company | Preventivo */}
           <div className="px-6 md:px-24 py-6 md:py-7 flex items-center justify-between border-b border-gray-100/50">
@@ -187,7 +187,7 @@ export default function QuotePage() {
         </div>
 
         {/* --- HEADER STILE LINEAR/NOTION --- */}
-        <header data-pdf-block="header" className="px-10 py-12 md:px-24 md:pt-20 md:pb-16 bg-white">
+        <header data-pdf-block="header" className="px-10 py-12 md:px-24 md:pt-20 md:pb-16 bg-white print:break-inside-avoid print:py-8">
           <div className="max-w-4xl">
 
             {/* 1. TITOLO PROGETTO */}
@@ -280,10 +280,10 @@ export default function QuotePage() {
           </div>
         </header>
 
-        <hr data-pdf-block="hr" className="border-[#f0f0f0] mx-10 md:mx-24 mb-16" />
+        <hr data-pdf-block="hr" className="border-[#f0f0f0] mx-10 md:mx-24 mb-16 print:hidden" />
 
         {/* --- CRONOPROGRAMMA --- */}
-        <div data-pdf-block="timeline" className="px-0 md:px-10 mb-12">
+        <div data-pdf-block="timeline" className="px-0 md:px-10 mb-12 print:break-inside-avoid print:mb-6">
           {quote.sections && quote.sections.some(s => s.slots && s.slots.length > 0) && (
             <WorkTimeline sections={quote.sections}
             daySettings={quote.daySettings || {}} />
@@ -294,19 +294,19 @@ export default function QuotePage() {
 
         {/* --- MATERIALI UTILIZZATI --- */}
         {quote.materials && quote.materials.length > 0 && (
-          <div data-pdf-block="global-materials">
+          <div data-pdf-block="global-materials" className="print:break-inside-avoid">
             <MaterialsSection materials={quote.materials} />
           </div>
         )}
 
         {/* --- FOOTER: TOTALI, TEAM E AZIONI --- */}
-        <footer data-pdf-block="footer-wrapper" className="border-t border-gray-100">
+        <footer data-pdf-block="footer-wrapper" className="border-t border-gray-100 print:border-t-0">
 
-          <div className="px-10 md:px-24 py-20 bg-white">
+          <div className="px-10 md:px-24 py-20 bg-white print:py-8">
             <div className="max-w-3xl mx-auto">
 
               {/* Riepilogo Costi — Apple-style table */}
-              <div data-pdf-block="riepilogo" className="mb-20">
+              <div data-pdf-block="riepilogo" className="mb-20 print:mb-10 print:break-inside-avoid">
                 <h3 data-pdf-block="riepilogo-header" className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-6">
                   Riepilogo costi
                 </h3>
@@ -382,21 +382,21 @@ export default function QuotePage() {
 
               {/* --- PIANO PAGAMENTI --- */}
               {quote.paymentPlan && quote.paymentPlan.length > 0 && (
-                <div data-pdf-block="payments-section" className="mb-20">
+                <div data-pdf-block="payments-section" className="mb-20 print:mb-10 print:break-inside-avoid">
                   <PaymentPlan payments={quote.paymentPlan} />
                 </div>
               )}
 
               {/* --- TEAM --- */}
               {quote.teamMembers && quote.teamMembers.length > 0 && (
-                <div data-pdf-block="team" className="mb-20">
+                <div data-pdf-block="team" className="mb-20 print:mb-10 print:break-inside-avoid">
                   <TeamSection teamMembers={quote.teamMembers} />
                 </div>
               )}
 
               {/* --- NOTE --- */}
               {quote.publicNotes && (
-                <div data-pdf-block="notes" className="mb-20">
+                <div data-pdf-block="notes" className="mb-20 print:mb-10 print:break-inside-avoid">
                   <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
                     Note
                   </h3>
@@ -407,7 +407,7 @@ export default function QuotePage() {
               )}
 
               {/* --- TERMINI E CONDIZIONI --- */}
-              <div data-pdf-block="termini" className="mb-20">
+              <div data-pdf-block="termini" className="mb-20 print:mb-10 print:break-inside-avoid">
                 <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">
                   Termini e Condizioni
                 </h3>
@@ -432,7 +432,7 @@ export default function QuotePage() {
               </div>
 
               {/* --- ACCETTAZIONE E FIRMA --- */}
-              <div data-pdf-block="firma" className="mb-20">
+              <div data-pdf-block="firma" className="mb-20 print:mb-10 print:break-inside-avoid">
                 <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-8">
                   Accettazione e Firma
                 </h3>
@@ -470,9 +470,9 @@ export default function QuotePage() {
               </div>
 
               {/* 4. DATI AZIENDALI E COORDINATE BANCARIE */}
-              <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100">
+              <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100 print:break-inside-avoid print:pt-6">
                 
-                <div className="flex items-center gap-3 mb-8">
+                <div className="flex items-center gap-3 mb-8 print:mb-4">
                   <img
                     src={ecoLogo}
                     alt="Eco Solution Logo"

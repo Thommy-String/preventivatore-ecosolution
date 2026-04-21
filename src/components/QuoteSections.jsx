@@ -31,7 +31,7 @@ function SectionMaterials({ materials }) {
                         >
                             {/* Photo — vertical, compact 3:2 */}
                             {material.photoUrl && (
-                                <div className="relative w-full aspect-[3/2] bg-[#f5f5f7] overflow-hidden">
+                                <div className="relative w-full aspect-[3/2] bg-[#f5f5f7] overflow-hidden print:hidden">
                                     <img
                                         src={material.photoUrl}
                                         alt={material.name}
@@ -52,7 +52,7 @@ function SectionMaterials({ materials }) {
                                             href={material.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[11px] text-blue-500 font-medium underline decoration-blue-400/50 decoration-1 underline-offset-2 hover:text-blue-600 hover:decoration-blue-500 transition-colors shrink-0"
+                                            className="inline-flex items-center gap-1 text-[11px] text-blue-500 font-medium underline decoration-blue-400/50 decoration-1 underline-offset-2 hover:text-blue-600 hover:decoration-blue-500 transition-colors shrink-0 print:hidden"
                                         >
                                             Vedi prodotto
                                             <ExternalLink size={10} className="opacity-70" />
@@ -134,7 +134,7 @@ export default function QuoteSections({ sections }) {
 
                         {/* Foto — blocco separato per PDF */}
                         {section.photos && section.photos.length > 0 && (
-                            <div data-pdf-block={`photos-${index}`} className="md:ml-[76px]">
+                            <div data-pdf-block={`photos-${index}`} className="md:ml-[76px] print:hidden">
                                 <div className={`grid gap-6 mt-8 mb-10 ${section.photos.length === 1 ? 'grid-cols-1 max-w-4xl' : 'grid-cols-1 md:grid-cols-2 max-w-5xl'}`}>
                                     {section.photos.map((photo, i) => (
                                         <div key={i} data-pdf-block={`photo-${index}-${i}`} className="relative aspect-[4/3] md:aspect-[4/3] rounded-[24px] overflow-hidden bg-[#f9f9f9] border border-black/5 shadow-sm">
@@ -155,13 +155,13 @@ export default function QuoteSections({ sections }) {
                         )}
 
                         {/* Lista Voci — ogni riga è un blocco PDF separato */}
-                        <div className="md:ml-[76px] mt-8">
+                        <div className="md:ml-[76px] mt-8 print:mt-4">
                             {section.items.map((item, idx) => (
                                 <div
                                     key={idx}
                                     data-pdf-block={`item-${index}-${idx}`}
-                                    className={`flex justify-between items-start gap-6 py-4 px-4 -mx-4 rounded-xl group ${
-                                        idx % 2 === 1 ? 'bg-[#e8e8ed]/50' : ''
+                                    className={`flex justify-between items-start gap-6 py-4 px-4 -mx-4 rounded-xl group print:break-inside-avoid print:py-2 print:px-0 print:-mx-0 ${
+                                        idx % 2 === 1 ? 'bg-[#e8e8ed]/50 print:bg-transparent' : 'print:bg-transparent'
                                     }`}
                                 >
                                     {/* Sinistra: Descrizione + dettaglio quantità */}
@@ -188,7 +188,7 @@ export default function QuoteSections({ sections }) {
                         </div>
 
                         {/* Per-Section Materials — blocco separato */}
-                        <div className="md:ml-[76px]">
+                        <div className="md:ml-[76px] print:break-inside-avoid">
                             <SectionMaterials materials={section.materials} />
                         </div>
 
