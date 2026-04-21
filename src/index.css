@@ -68,14 +68,14 @@
      (URL localhost, titolo pagina, data, numero pagina).
      Il contenuto si gestisce con padding interni. */
   @page {
-    margin: 0;
+    margin: 15mm;
     size: A4;
   }
 
   /* Padding interno per compensare i margini azzerati */
   main {
-    padding-top: 10mm !important;
-    padding-bottom: 10mm !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 }
 

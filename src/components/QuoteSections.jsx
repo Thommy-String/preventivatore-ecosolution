@@ -98,7 +98,7 @@ export default function QuoteSections({ sections }) {
     if (!sections || sections.length === 0) return null;
 
     return (
-        <div data-pdf-block="sections-wrapper" className="bg-gray-50 px-6 py-10 md:px-24 pb-20">
+        <div data-pdf-block="sections-wrapper" className="bg-white px-6 py-10 md:px-24 pb-20">
             {sections.map((section, index) => {
                 const sectionTotal = section.items.reduce((a, b) => a + (b.price * b.quantity), 0);
                 const totalQty = section.items.reduce((a, b) => a + parseFloat(b.quantity || 0), 0);
@@ -123,11 +123,11 @@ export default function QuoteSections({ sections }) {
 
                             {/* Titolo + Descrizione only */}
                             <div className="w-full">
-                                <h2 className="text-2xl md:text-3xl font-bold text-[#1d1d1f] tracking-tight leading-tight mb-1">
+                                <h2 className="text-xl md:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight mb-1">
                                     {section.title}
                                 </h2>
                                 {section.description && (
-                                    <div className="text-[15px] leading-relaxed text-[#86868b] max-w-2xl mt-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2 [&_li]:py-0.5 [&_p]:my-1 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
+                                    <div className="text-[14px] leading-relaxed text-[#86868b] max-w-2xl mt-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2 [&_li]:py-0.5 [&_p]:my-1 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
                                 )}
                             </div>
                         </div>
@@ -155,18 +155,16 @@ export default function QuoteSections({ sections }) {
                         )}
 
                         {/* Lista Voci — ogni riga è un blocco PDF separato */}
-                        <div className="md:ml-[76px] mt-8 print:mt-4">
+                        <div className="md:ml-[76px] mt-8 print:mt-4 border-t border-[#e8e8ed]/80">
                             {section.items.map((item, idx) => (
                                 <div
                                     key={idx}
                                     data-pdf-block={`item-${index}-${idx}`}
-                                    className={`flex justify-between items-start gap-6 py-4 px-4 -mx-4 rounded-xl group print:break-inside-avoid print:py-2 print:px-0 print:-mx-0 ${
-                                        idx % 2 === 1 ? 'bg-[#e8e8ed]/50 print:bg-transparent' : 'print:bg-transparent'
-                                    }`}
+                                    className="flex justify-between items-start gap-6 py-3 border-b border-[#e8e8ed]/80 last:border-b-0 group print:break-inside-avoid print:py-2.5"
                                 >
                                     {/* Sinistra: Descrizione + dettaglio quantità */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[14px] leading-snug text-[#1d1d1f] font-medium" dangerouslySetInnerHTML={{ __html: item.description }} />
+                                        <div className="text-[13px] leading-tight text-[#1d1d1f] font-medium [&_p]:my-0" dangerouslySetInnerHTML={{ __html: item.description }} />
                                         <p className="text-[11px] text-[#a1a1a6] mt-1 tabular-nums">
                                             {item.quantity} {item.unit} × {formatCurrency(item.price)}
                                         </p>
@@ -175,11 +173,11 @@ export default function QuoteSections({ sections }) {
                                     {/* Destra: Totale voce */}
                                     <div className="shrink-0 text-right pt-0.5">
                                         {item.originalPrice && parseFloat(item.originalPrice) > 0 && (
-                                            <span className="text-[12px] text-[#ff3b30] line-through tabular-nums mr-2 opacity-70">
+                                            <span className="text-[11px] text-[#ff3b30] line-through tabular-nums mr-2 opacity-70">
                                                 {formatCurrency(parseFloat(item.originalPrice) * item.quantity)}
                                             </span>
                                         )}
-                                        <span className="text-[14px] font-semibold text-[#1d1d1f] tabular-nums">
+                                        <span className="text-[13px] font-semibold text-[#1d1d1f] tabular-nums">
                                             {formatCurrency(item.price * item.quantity)}
                                         </span>
                                     </div>
