@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 
 import { DEFAULT_TEAM } from '../config/defaultTeam';
+import { getDefaultTermsAndConditions, getCompanyDisplayName } from '../utils/defaultTermsAndConditions';
 
 import TimelineEditor from '../components/TimelineEditor';
 import PaymentPlan from '../components/PaymentPlan';
@@ -805,7 +806,22 @@ export default function EditQuotePage() { // Non servono più props qui
 
               {/* Termini e Condizioni */}
               <div className="md:col-span-2">
-                <Label>Termini e Condizioni</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Termini e Condizioni</Label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const companyName = getCompanyDisplayName(editingQuote.companyData);
+                      setEditingQuote({
+                        ...editingQuote,
+                        termsAndConditions: getDefaultTermsAndConditions(companyName)
+                      });
+                    }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1 rounded transition-colors"
+                  >
+                    Inserisci Template Predefinito
+                  </button>
+                </div>
                 <StyledTextArea
                   name="termsAndConditions"
                   value={editingQuote.termsAndConditions || ''}
