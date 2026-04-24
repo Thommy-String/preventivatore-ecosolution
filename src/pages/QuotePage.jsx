@@ -69,17 +69,27 @@ export default function QuotePage() {
             
             {/* SINISTRA: Logo + Company Name */}
             <div className="flex items-center gap-3 shrink-0">
-              <img
-                src={ecoLogo}
-                alt="Eco Solution"
-                className="w-14 h-14 md:w-16 md:h-16 object-contain rounded-[8px] border border-black/5 shrink-0"
-              />
-              <div className="min-w-0">
-                <h2 className="text-[13px] md:text-[14px] font-bold text-[#1d1d1f] tracking-tight leading-tight">
-                  ECO SOLUTION S.a.s
-                </h2>
-                <p className="text-[10px] text-[#a1a1a6] font-medium">Azienda Edile</p>
-              </div>
+              {(() => {
+                const customData = quote.companyData?.useCustom ? quote.companyData : null;
+                const logoSrc = customData?.logo || ecoLogo;
+                const companyName = customData?.name || 'ECO SOLUTION S.a.s';
+                
+                return (
+                  <>
+                    <img
+                      src={logoSrc}
+                      alt={companyName}
+                      className="w-14 h-14 md:w-16 md:h-16 object-contain rounded-[8px] border border-black/5 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h2 className="text-[13px] md:text-[14px] font-bold text-[#1d1d1f] tracking-tight leading-tight">
+                        {companyName}
+                      </h2>
+                      {!customData && <p className="text-[10px] text-[#a1a1a6] font-medium">Azienda Edile</p>}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
 
             {/* DESTRA: Numero Preventivo con icon */}
@@ -97,85 +107,188 @@ export default function QuotePage() {
 
           </div>
 
-          {/* MIDDLE ROW: Company Info — Smart layout per mobile/desktop */}
-          <div className="px-6 md:px-24 py-5 md:py-6 border-b border-gray-100/50 bg-gray-50/30">
-            
-            {/* DESKTOP: Riga compatta con info */}
-            <div className="hidden md:flex items-center justify-between gap-10">
+          {/* MIDDLE ROW: Company Info — Mostra solo se dati personalizzati */}
+          {quote.companyData?.useCustom && (() => {
+            const customData = quote.companyData;
+            const companyAddress = customData.address;
+            const companyPhone = customData.phone;
+            const companyEmail = customData.email;
+            const companyVatId = customData.vatId;
+
+            return (
+              <div className="px-6 md:px-24 py-5 md:py-6 border-b border-gray-100/50 bg-gray-50/30">
+                
+                {/* DESKTOP: Riga compatta con info */}
+                <div className="hidden md:flex items-center justify-between gap-10">
+                  
+                  {/* Sede Operativa */}
+                  {companyAddress && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
+                      <p className="text-[10px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
+                    </div>
+                  )}
+
+                  {/* Contatti */}
+                  {(companyPhone || companyEmail) && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
+                      <div className="space-y-0.5">
+                        {companyPhone && (
+                          <a href={`tel:${companyPhone}`} className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                            {companyPhone}
+                          </a>
+                        )}
+                        {companyEmail && (
+                          <a href={`mailto:${companyEmail}`} className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                            {companyEmail}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Emissione */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
+                    <p className="text-[10px] text-[#1d1d1f] font-medium">{quote.date}</p>
+                    <p className="text-[9px] text-[#a1a1a6]">Valido 30 giorni</p>
+                  </div>
+
+                  {/* P.IVA */}
+                  {companyVatId && (
+                    <div className="flex-1 min-w-0 text-right">
+                      <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
+                      <p className="text-[10px] text-[#1d1d1f] font-medium">{companyVatId}</p>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* MOBILE: Layout flessibile */}
+                <div className="md:hidden flex flex-col gap-4">
+
+                  {/* Sede Operativa */}
+                  {companyAddress && (
+                    <div>
+                      <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
+                      <p className="text-[11px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
+                    </div>
+                  )}
+
+                  {/* Contatti + P.IVA */}
+                  <div className="flex gap-4">
+                    {(companyPhone || companyEmail) && (
+                      <div className="flex-1">
+                        <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
+                        <div className="space-y-1">
+                          {companyPhone && (
+                            <a href={`tel:${companyPhone}`} className="block text-[11px] text-blue-600 font-medium hover:text-blue-700">
+                              {companyPhone}
+                            </a>
+                          )}
+                          {companyEmail && (
+                            <a href={`mailto:${companyEmail}`} className="block text-[11px] text-blue-600 font-medium hover:text-blue-700">
+                              {companyEmail}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {companyVatId && (
+                      <div className="flex-1 text-right">
+                        <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
+                        <p className="text-[11px] text-[#1d1d1f] font-medium">{companyVatId}</p>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* MIDDLE ROW: Company Info DEFAULT — ECO SOLUTION (quando personalizzati disabilitati) */}
+          {!quote.companyData?.useCustom && (
+            <div className="px-6 md:px-24 py-5 md:py-6 border-b border-gray-100/50 bg-gray-50/30">
               
-              {/* Sede Operativa */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
-                <p className="text-[10px] text-[#1d1d1f] font-medium leading-tight">Via Roma, 8</p>
-                <p className="text-[9px] text-[#a1a1a6] leading-tight">20823 Lentate sul Seveso (MB)</p>
-              </div>
-
-              {/* Contatti */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
-                <div className="space-y-0.5">
-                  <a href="tel:+39334222122" className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
-                    +39 334 222 1212
-                  </a>
-                  <a href="mailto:info@ecosolutionsas.it" className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
-                    info@ecosolutionsas.it
-                  </a>
-                </div>
-              </div>
-
-              {/* Emissione */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
-                <p className="text-[10px] text-[#1d1d1f] font-medium">{quote.date}</p>
-                <p className="text-[9px] text-[#a1a1a6]">Valido 30 giorni</p>
-              </div>
-
-              {/* P.IVA */}
-              <div className="flex-1 min-w-0 text-right">
-                <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
-                <p className="text-[10px] text-[#1d1d1f] font-medium">04640600161</p>
-              </div>
-
-            </div>
-
-            {/* MOBILE: 2 colonne bilanciate, senza separatori */}
-            <div className="md:hidden flex items-stretch gap-6">
-
-              {/* SINISTRA: Sede + P.IVA */}
-              <div className="flex-1 min-w-0 flex flex-col gap-4">
-                <div className="min-h-[52px]">
+              {/* DESKTOP: Riga compatta con info */}
+              <div className="hidden md:flex items-center justify-between gap-10">
+                
+                {/* Sede Operativa */}
+                <div className="flex-1 min-w-0">
                   <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
-                  <p className="text-[11px] text-[#1d1d1f] font-medium leading-tight">Via Roma, 8</p>
-                  <p className="text-[10px] text-[#a1a1a6] leading-tight">20823 Lentate sul Seveso (MB)</p>
+                  <p className="text-[10px] text-[#1d1d1f] font-medium leading-tight">Via Roma, 8</p>
+                  <p className="text-[9px] text-[#a1a1a6] leading-tight">20823 Lentate sul Seveso (MB)</p>
                 </div>
-                <div>
+
+                {/* Contatti */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
+                  <div className="space-y-0.5">
+                    <a href="tel:+39334222122" className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                      +39 334 222 1212
+                    </a>
+                    <a href="mailto:info@ecosolutionsas.it" className="block text-[10px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                      info@ecosolutionsas.it
+                    </a>
+                  </div>
+                </div>
+
+                {/* Emissione */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
+                  <p className="text-[10px] text-[#1d1d1f] font-medium">{quote.date}</p>
+                  <p className="text-[9px] text-[#a1a1a6]">Valido 30 giorni</p>
+                </div>
+
+                {/* P.IVA */}
+                <div className="flex-1 min-w-0 text-right">
                   <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
-                  <p className="text-[11px] text-[#1d1d1f] font-medium">04640600161</p>
-                  <p className="text-[10px] text-[#a1a1a6] leading-tight">SDI T9K4ZHO</p>
+                  <p className="text-[10px] text-[#1d1d1f] font-medium">04640600161</p>
                 </div>
+
               </div>
 
-              {/* DESTRA: Contatti + Emissione — allineato a destra */}
-              <div className="flex-1 min-w-0 flex flex-col gap-4 text-right">
-                <div className="min-h-[52px]">
-                  <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
-                  <a href="tel:+39334222122" className="block text-[11px] text-blue-600 font-medium underline decoration-blue-600 decoration-1 underline-offset-2">
-                    +39 334 222 1212
-                  </a>
-                  <a href="mailto:info@ecosolutionsas.it" className="block text-[11px] text-blue-600 font-medium underline decoration-blue-600 decoration-1 underline-offset-2 break-all">
-                    info@ecosolutionsas.it
-                  </a>
+              {/* MOBILE: 2 colonne bilanciate */}
+              <div className="md:hidden flex items-stretch gap-6">
+
+                {/* SINISTRA: Sede + P.IVA */}
+                <div className="flex-1 min-w-0 flex flex-col gap-4">
+                  <div className="min-h-[52px]">
+                    <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
+                    <p className="text-[11px] text-[#1d1d1f] font-medium leading-tight">Via Roma, 8</p>
+                    <p className="text-[10px] text-[#a1a1a6] leading-tight">20823 Lentate sul Seveso (MB)</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
+                    <p className="text-[11px] text-[#1d1d1f] font-medium">04640600161</p>
+                    <p className="text-[10px] text-[#a1a1a6] leading-tight">SDI T9K4ZHO</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
-                  <p className="text-[11px] text-[#1d1d1f] font-medium">{quote.date}</p>
-                  <p className="text-[10px] text-[#a1a1a6] leading-tight">Valido 30 giorni</p>
+
+                {/* DESTRA: Contatti + Emissione */}
+                <div className="flex-1 min-w-0 flex flex-col gap-4 text-right">
+                  <div className="min-h-[52px]">
+                    <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
+                    <a href="tel:+39334222122" className="block text-[11px] text-blue-600 font-medium underline decoration-blue-600 decoration-1 underline-offset-2">
+                      +39 334 222 1212
+                    </a>
+                    <a href="mailto:info@ecosolutionsas.it" className="block text-[11px] text-blue-600 font-medium underline decoration-blue-600 decoration-1 underline-offset-2 break-all">
+                      info@ecosolutionsas.it
+                    </a>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
+                    <p className="text-[11px] text-[#1d1d1f] font-medium">{quote.date}</p>
+                    <p className="text-[10px] text-[#a1a1a6] leading-tight">Valido 30 giorni</p>
+                  </div>
                 </div>
+
               </div>
 
             </div>
-
-          </div>
+          )}
 
           {/* BOTTOM ROW: Validity info — Desktop only */}
           <div className="hidden md:block px-24 py-4 text-right">
@@ -502,67 +615,155 @@ export default function QuotePage() {
               </div>
 
               {/* 4. DATI AZIENDALI E COORDINATE BANCARIE */}
-              <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100 print:break-inside-avoid print:pt-6">
-                
-                <div className="flex items-center gap-3 mb-8 print:mb-4">
-                  <img
-                    src={ecoLogo}
-                    alt="Eco Solution Logo"
-                    className="w-12 h-12 object-contain rounded-lg opacity-80"
-                  />
-                  <div>
-                    <p className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
-                      ECO SOLUTION S.a.s.
+              {quote.companyData?.useCustom && (() => {
+                const customData = quote.companyData;
+                const companyLogo = customData.logo;
+                const companyName = customData.name;
+                const companyAddress = customData.address;
+                const companyPhone = customData.phone;
+                const companyEmail = customData.email;
+                const companyWebsite = customData.website;
+                const companyVatId = customData.vatId;
+                const companyTaxId = customData.taxId;
+                const companySdi = customData.sdi;
+                const companyBankName = customData.bankName;
+                const companyBankBranch = customData.bankBranch;
+                const companyAccountNumber = customData.accountNumber;
+                const companyIban = customData.iban;
+
+                return (
+                  <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100 print:break-inside-avoid print:pt-6">
+                    
+                    <div className="flex items-center gap-3 mb-8 print:mb-4">
+                      {companyLogo && (
+                        <img
+                          src={companyLogo}
+                          alt="Company Logo"
+                          className="w-12 h-12 object-contain rounded-lg opacity-80"
+                        />
+                      )}
+                      <div>
+                        <p className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
+                          {companyName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] text-[#86868b] leading-[1.7]">
+                      {/* Sedi / Contatti */}
+                      <div>
+                        {companyAddress && (
+                          <div>
+                            <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede</p>
+                            <p className="whitespace-pre-line">{companyAddress}</p>
+                          </div>
+                        )}
+                        {(companyPhone || companyEmail || companyWebsite) && (
+                          <div className="mt-3">
+                            <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Contatti</p>
+                            {companyPhone && <p>Tel: <span className="text-[#1d1d1f] font-medium">{companyPhone}</span></p>}
+                            {companyEmail && <p>Email: <span className="text-[#1d1d1f] font-medium">{companyEmail}</span></p>}
+                            {companyWebsite && <p>Web: <span className="text-[#1d1d1f] font-medium">{companyWebsite}</span></p>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Dati Fiscali */}
+                      <div>
+                        <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
+                        {companyVatId && <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">{companyVatId}</span></p>}
+                        {companyTaxId && <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">{companyTaxId}</span></p>}
+                        {companySdi && <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">{companySdi}</span></p>}
+                        <div className="mt-3">
+                          <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Documento</p>
+                          <p>Emesso il: <span className="text-[#1d1d1f] font-medium">{quote.date}</span></p>
+                          <p>Valido per 30 giorni dalla data di emissione</p>
+                        </div>
+                      </div>
+
+                      {/* Coordinate Bancarie */}
+                      <div>
+                        <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
+                        {companyBankName && <p className="font-medium text-[#1d1d1f]">{companyBankName}</p>}
+                        {companyBankBranch && <p>{companyBankBranch}</p>}
+                        {companyAccountNumber && <div className="mt-2"><p>C/C N. <span className="text-[#1d1d1f] font-medium">{companyAccountNumber}</span></p></div>}
+                        {companyIban && <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">{companyIban}</span></p>}
+                      </div>
+                    </div>
+
+                    <div className="mt-8 pt-4 border-t border-gray-50 text-center">
+                      <p className="text-[10px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
+                        Documento generato dal sistema di gestione
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Footer DEFAULT - Dati ECO SOLUTION (quando personalizzati disabilitati) */}
+              {!quote.companyData?.useCustom && (
+                <div data-pdf-block="company-footer" className="pt-12 border-t border-gray-100 print:break-inside-avoid print:pt-6">
+                  
+                  <div className="flex items-center gap-3 mb-8 print:mb-4">
+                    <img
+                      src={ecoLogo}
+                      alt="Eco Solution Logo"
+                      className="w-12 h-12 object-contain rounded-lg opacity-80"
+                    />
+                    <div>
+                      <p className="text-[13px] font-bold text-[#1d1d1f] uppercase tracking-tight">
+                        ECO SOLUTION S.a.s.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] text-[#86868b] leading-[1.7]">
+                    {/* Sedi */}
+                    <div>
+                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
+                      <p>Via Primo Maggio, 3</p>
+                      <p>23892 Bulciago (LC)</p>
+                      <div className="mt-3">
+                        <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Operativa</p>
+                        <p>Via Roma, 8</p>
+                        <p>20823 Lentate sul Seveso (MB)</p>
+                      </div>
+                    </div>
+
+                    {/* Dati Fiscali */}
+                    <div>
+                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
+                      <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
+                      <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
+                      <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">T9K4ZHO</span></p>
+                      <div className="mt-3">
+                        <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Documento</p>
+                        <p>Emesso il: <span className="text-[#1d1d1f] font-medium">{quote.date}</span></p>
+                        <p>Valido per 30 giorni dalla data di emissione</p>
+                      </div>
+                    </div>
+
+                    {/* Coordinate Bancarie */}
+                    <div>
+                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
+                      <p className="font-medium text-[#1d1d1f]">Banca di Credito Cooperativo di Barlassina</p>
+                      <p>Filiale di Lentate sul Seveso (MB)</p>
+                      <p>Via Papa Giovanni XXIII, 6</p>
+                      <p>20823 Lentate sul Seveso (MB)</p>
+                      <div className="mt-2">
+                        <p>C/C N. <span className="text-[#1d1d1f] font-medium">06/605276</span></p>
+                        <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">IT29 L083 7433 2400 0000 6605 276</span></p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-4 border-t border-gray-50 text-center">
+                    <p className="text-[10px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
+                      Documento generato dal sistema di gestione ECO SOLUTION S.a.s.
                     </p>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[11px] text-[#86868b] leading-[1.7]">
-                  {/* Sedi */}
-                  <div>
-                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
-                    <p>Via Primo Maggio, 3</p>
-                    <p>23892 Bulciago (LC)</p>
-                    <div className="mt-3">
-                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Operativa</p>
-                      <p>Via Roma, 8</p>
-                      <p>20823 Lentate sul Seveso (MB)</p>
-                    </div>
-                  </div>
-
-                  {/* Dati Fiscali */}
-                  <div>
-                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
-                    <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
-                    <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
-                    <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">T9K4ZHO</span></p>
-                    <div className="mt-3">
-                      <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Documento</p>
-                      <p>Emesso il: <span className="text-[#1d1d1f] font-medium">{quote.date}</span></p>
-                      <p>Valido per 30 giorni dalla data di emissione</p>
-                    </div>
-                  </div>
-
-                  {/* Coordinate Bancarie */}
-                  <div>
-                    <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
-                    <p className="font-medium text-[#1d1d1f]">Banca di Credito Cooperativo di Barlassina</p>
-                    <p>Filiale di Lentate sul Seveso (MB)</p>
-                    <p>Via Papa Giovanni XXIII, 6</p>
-                    <p>20823 Lentate sul Seveso (MB)</p>
-                    <div className="mt-2">
-                      <p>C/C N. <span className="text-[#1d1d1f] font-medium">06/605276</span></p>
-                      <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">IT29 L083 7433 2400 0000 6605 276</span></p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 pt-4 border-t border-gray-50 text-center">
-                  <p className="text-[10px] text-[#a1a1a6] tracking-wider uppercase font-medium opacity-60">
-                    Documento generato dal sistema di gestione ECO SOLUTION S.a.s.
-                  </p>
-                </div>
-              </div>
+              )}
 
             </div>
           </div>

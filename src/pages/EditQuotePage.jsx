@@ -14,6 +14,7 @@ import TeamEditor from '../components/TeamEditor';
 import MaterialsEditor from '../components/MaterialsEditor';
 import SectionMaterialsEditor from '../components/SectionMaterialsEditor';
 import RichTextEditor from '../components/RichTextEditor';
+import CompanyDataEditor from '../components/CompanyDataEditor';
 
 // --- Componenti UI Helpers ---
 const Label = ({ children }) => (
@@ -76,6 +77,23 @@ export default function EditQuotePage() { // Non servono più props qui
     teamMembers: DEFAULT_TEAM,
     materials: [],
     daySettings: {},
+    // --- Dati Aziendali Personalizzati ---
+    companyData: {
+      useCustom: false,
+      name: '',
+      logo: '',
+      address: '',
+      phone: '',
+      email: '',
+      website: '',
+      vatId: '',
+      taxId: '',
+      bankName: '',
+      bankBranch: '',
+      accountNumber: '',
+      iban: '',
+      sdi: ''
+    }
   });
 
   // --- 1. CARICAMENTO DATI DA FIREBASE ---
@@ -1499,6 +1517,11 @@ export default function EditQuotePage() { // Non servono più props qui
 
           <MaterialsEditor
             materials={editingQuote.materials || []}
+            setEditingQuote={setEditingQuote}
+          />
+
+          <CompanyDataEditor
+            companyData={editingQuote.companyData}
             setEditingQuote={setEditingQuote}
           />
         </div>
