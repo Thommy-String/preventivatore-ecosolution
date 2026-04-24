@@ -359,14 +359,22 @@ export default function QuotePage() {
                   </span>
                   <div className="text-right">
                     {(() => {
-                      const originalTotal = quote.sections.reduce((acc, s) => acc + s.items.reduce((a, i) => {
+                      // Originale per-item (sommatoria di originalPrice o price se mancante)
+                      const itemsOriginalTotal = quote.sections.reduce((acc, s) => acc + s.items.reduce((a, i) => {
                         const op = parseFloat(i.originalPrice);
                         return a + ((op > 0 ? op : i.price) * i.quantity);
                       }, 0), 0);
-                      const hasDiscount = originalTotal > quote.summary.subtotal + 0.01;
+                      // Imponibile lordo (somma price * qty senza sconto globale)
+                      const grossSubtotal = quote.summary.originalSubtotal != null
+                        ? quote.summary.originalSubtotal
+                        : quote.sections.reduce((acc, s) => acc + s.items.reduce((a, i) => a + (i.price * i.quantity), 0), 0);
+                      // Prezzo "originale" da mostrare barrato: il maggiore tra item-original e gross
+                      const displayOriginal = Math.max(itemsOriginalTotal, grossSubtotal);
+                      const finalTotal = quote.summary.subtotal;
+                      const hasDiscount = displayOriginal > finalTotal + 0.01;
                       return hasDiscount ? (
                         <span className="text-[16px] md:text-[18px] text-[#ff3b30] line-through tabular-nums tracking-tight opacity-70 mr-3">
-                          {formatCurrency(originalTotal)}
+                          {formatCurrency(displayOriginal)}
                         </span>
                       ) : null;
                     })()}
@@ -375,9 +383,33 @@ export default function QuotePage() {
                     </span>
                   </div>
                 </div>
-                <p className="text-[12px] text-[#86868b] mt-1.5 text-right">
-                  * al netto di IVA
-                </p>
+                {quote.summary.discountAmount > 0.01 && (
+                  <p className="text-[12px] text-emerald-600 mt-1.5 text-right font-semibold">
+                    Sconto applicato: − {formatCurrency(quote.summary.discountAmount)}
+                  </p>
+                )}
+                {quote.summary.vatPercentage > 0 ? (
+                  <>
+                    <div className="flex items-baseline justify-between pt-3 mt-2 gap-4 text-[#86868b]">
+                      <span className="text-[14px] font-medium">IVA {quote.summary.vatPercentage}%</span>
+                      <span className="text-[15px] tabular-nums font-medium">
+                        + {formatCurrency(quote.summary.vatAmount || (quote.summary.subtotal * quote.summary.vatPercentage / 100))}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between pt-4 mt-3 border-t border-[#e8e8ed] gap-4">
+                      <span className="text-[15px] md:text-[17px] text-[#1d1d1f] font-bold tracking-tight">
+                        Totale IVA inclusa
+                      </span>
+                      <span className="text-[22px] md:text-[26px] text-[#1d1d1f] font-black tabular-nums tracking-tight">
+                        {formatCurrency(quote.summary.totalWithVat || (quote.summary.subtotal * (1 + quote.summary.vatPercentage / 100)))}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[12px] text-[#86868b] mt-1.5 text-right">
+                    * al netto di IVA
+                  </p>
+                )}
               </div>
 
               {/* --- PIANO PAGAMENTI --- */}

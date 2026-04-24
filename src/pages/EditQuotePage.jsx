@@ -121,15 +121,41 @@ export default function EditQuotePage() { // Non servono più props qui
 
   // --- Logica Calcoli Live ---
   const liveSummary = useMemo(() => {
-    if (!editingQuote) return { subtotal: 0, total: 0 };
+    if (!editingQuote) return { subtotal: 0, total: 0, originalTotal: 0, discountAmount: 0 };
     let subtotal = 0;
+    let originalTotal = 0;
     editingQuote.sections.forEach(section => {
-      section.items.forEach(item => {
-        subtotal += (parseFloat(item.price) || 0) * (parseFloat(item.quantity) || 0);
+      (section.items || []).forEach(item => {
+        const qty = parseFloat(item.quantity) || 0;
+        const price = parseFloat(item.price) || 0;
+        const op = parseFloat(item.originalPrice);
+        subtotal += price * qty;
+        originalTotal += (op > 0 ? op : price) * qty;
       });
     });
-    // Il totale ora coincide con l'imponibile
-    return { subtotal, total: subtotal };
+
+    // --- Sconto globale ---
+    const discount = editingQuote.globalDiscount || { type: 'NONE', value: 0 };
+    let total = subtotal;
+    let discountAmount = 0;
+    const dv = parseFloat(discount.value) || 0;
+    if (discount.type === 'PERCENTAGE' && dv > 0) {
+      discountAmount = (subtotal * dv) / 100;
+      total = subtotal - discountAmount;
+    } else if (discount.type === 'FIXED' && dv > 0) {
+      discountAmount = Math.min(dv, subtotal);
+      total = subtotal - discountAmount;
+    } else if (discount.type === 'FINAL' && dv > 0) {
+      total = Math.min(dv, subtotal);
+      discountAmount = subtotal - total;
+    }
+
+    // --- IVA ---
+    const vatPercentage = parseFloat(editingQuote.vatPercentage) || 0;
+    const vatAmount = (total * vatPercentage) / 100;
+    const totalWithVat = total + vatAmount;
+
+    return { subtotal, total, originalTotal, discountAmount, vatPercentage, vatAmount, totalWithVat };
   }, [editingQuote]);
 
   // Ricalcola importi pagamenti quando il totale cambia
@@ -533,11 +559,17 @@ export default function EditQuotePage() { // Non servono più props qui
     }
 
     try {
-      // Salviamo solo l'imponibile come totale
+      // Salviamo il totale (eventualmente scontato) come "subtotal" del documento finale
+      // così la pagina cliente continua a funzionare. Conserviamo anche l'imponibile lordo
+      // e l'eventuale sconto applicato.
       const finalSummary = {
-        subtotal: liveSummary.subtotal,
-        total: liveSummary.subtotal,
-        vatPercentage: 0 // Impostiamo a 0 o rimuoviamo
+        subtotal: liveSummary.total,           // Totale finale dopo sconto (compat. UI esistente)
+        originalSubtotal: liveSummary.subtotal, // Imponibile prima dello sconto
+        discountAmount: liveSummary.discountAmount,
+        total: liveSummary.total,
+        vatPercentage: liveSummary.vatPercentage,
+        vatAmount: liveSummary.vatAmount,
+        totalWithVat: liveSummary.totalWithVat
       };
 
       const quoteToSave = removeUndefined({
@@ -1486,17 +1518,223 @@ export default function EditQuotePage() { // Non servono più props qui
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm text-gray-400 font-medium italic">
-                  <span>* Prezzi al netto di IVA</span>
+                  <span>* Tutti gli importi sono in Euro</span>
                 </div>
+                {liveSummary.discountAmount > 0.01 && (
+                  <>
+                    <div className="flex justify-between text-sm text-gray-300">
+                      <span>Imponibile lordo</span>
+                      <span className="line-through text-red-400/80 tabular-nums">
+                        {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.subtotal)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm text-emerald-400 font-bold">
+                      <span>Sconto applicato</span>
+                      <span className="tabular-nums">
+                        − {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.discountAmount)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-between items-end border-t border-gray-800 pt-6">
-                <span className="text-sm font-bold text-gray-400">IMPONIBILE</span>
-                <span className="text-3xl font-bold tracking-tight">
-                  {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.subtotal)}
+                <span className="text-sm font-bold text-gray-400">{liveSummary.discountAmount > 0.01 ? 'IMPONIBILE (NETTO)' : 'IMPONIBILE'}</span>
+                <span className="text-2xl font-bold tracking-tight">
+                  {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.total)}
                 </span>
               </div>
+
+              {liveSummary.vatPercentage > 0 && (
+                <>
+                  <div className="flex justify-between items-end pt-3 text-gray-400">
+                    <span className="text-xs font-bold">IVA {liveSummary.vatPercentage}%</span>
+                    <span className="text-base font-semibold tabular-nums">
+                      + {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.vatAmount)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-end border-t border-gray-800 pt-4 mt-3">
+                    <span className="text-sm font-bold text-emerald-400">TOTALE IVA INCLUSA</span>
+                    <span className="text-3xl font-bold tracking-tight text-emerald-400">
+                      {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(liveSummary.totalWithVat)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* --- IVA --- */}
+            {(() => {
+              const vatPresets = [0, 4, 10, 22];
+              const currentVat = parseFloat(editingQuote.vatPercentage) || 0;
+              const isCustom = !vatPresets.includes(currentVat);
+              const fmt = (v) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v);
+              return (
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/60">
+                  <Label>IVA da applicare</Label>
+                  <div className="grid grid-cols-5 gap-1.5 mb-3">
+                    {vatPresets.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setEditingQuote(prev => ({ ...prev, vatPercentage: p }))}
+                        className={`py-2 text-xs font-bold rounded-lg border transition-all ${
+                          !isCustom && currentVat === p
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {p === 0 ? 'No IVA' : `${p}%`}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setEditingQuote(prev => ({ ...prev, vatPercentage: isCustom ? currentVat : 5 }))}
+                      className={`py-2 text-xs font-bold rounded-lg border transition-all ${
+                        isCustom
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      Altro
+                    </button>
+                  </div>
+                  {isCustom && (
+                    <div className="relative mb-3">
+                      <StyledInput
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={currentVat}
+                        onChange={(e) => setEditingQuote(prev => ({ ...prev, vatPercentage: parseFloat(e.target.value) || 0 }))}
+                        placeholder="5"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm font-medium">%</span>
+                    </div>
+                  )}
+                  {currentVat > 0 && (
+                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500">Imponibile</span>
+                        <span className="text-gray-700 tabular-nums font-medium">{fmt(liveSummary.total)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500">IVA {currentVat}%</span>
+                        <span className="text-gray-700 tabular-nums font-medium">+ {fmt(liveSummary.vatAmount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1.5 border-t border-gray-200">
+                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-wider">Totale c/IVA</span>
+                        <span className="text-base font-black text-gray-900 tabular-nums">{fmt(liveSummary.totalWithVat)}</span>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-gray-400 italic mt-3 leading-relaxed">
+                    L'IVA verrà mostrata sul preventivo come riga separata sotto l'imponibile.
+                  </p>
+                </div>
+              );
+            })()}
+
+            {/* --- SCONTO GLOBALE --- */}
+            {(() => {
+              const discount = editingQuote.globalDiscount || { type: 'NONE', value: 0 };
+              const fmt = (v) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v);
+              const setDiscount = (next) => {
+                setEditingQuote(prev => ({ ...prev, globalDiscount: next }));
+              };
+              const types = [
+                { id: 'NONE', label: 'Nessuno' },
+                { id: 'PERCENTAGE', label: '% Sconto' },
+                { id: 'FIXED', label: '€ Sconto' },
+                { id: 'FINAL', label: '€ Finale' },
+              ];
+              return (
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200/60">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label>Sconto sul Totale</Label>
+                    {discount.type !== 'NONE' && (parseFloat(discount.value) || 0) > 0 && (
+                      <button
+                        onClick={() => setDiscount({ type: 'NONE', value: 0 })}
+                        className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-wider"
+                      >
+                        Rimuovi
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {types.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setDiscount({ type: t.id, value: t.id === 'NONE' ? 0 : (discount.value || (t.id === 'PERCENTAGE' ? 10 : liveSummary.subtotal)) })}
+                        className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
+                          (discount.type || 'NONE') === t.id
+                            ? 'bg-black text-white border-black'
+                            : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {discount.type === 'PERCENTAGE' && (
+                    <div className="relative">
+                      <StyledInput
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={discount.value}
+                        onChange={(e) => setDiscount({ ...discount, value: e.target.value })}
+                        placeholder="10"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm font-medium">%</span>
+                    </div>
+                  )}
+                  {discount.type === 'FIXED' && (
+                    <div className="relative">
+                      <StyledInput
+                        type="number"
+                        min="0"
+                        value={discount.value}
+                        onChange={(e) => setDiscount({ ...discount, value: e.target.value })}
+                        placeholder="500"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm font-medium">€</span>
+                    </div>
+                  )}
+                  {discount.type === 'FINAL' && (
+                    <div className="relative">
+                      <StyledInput
+                        type="number"
+                        min="0"
+                        value={discount.value}
+                        onChange={(e) => setDiscount({ ...discount, value: e.target.value })}
+                        placeholder={liveSummary.subtotal.toFixed(2)}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 text-sm font-medium">€ finali</span>
+                    </div>
+                  )}
+
+                  {discount.type !== 'NONE' && liveSummary.discountAmount > 0.01 && (
+                    <div className="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-gray-500">Era</span>
+                        <span className="text-red-500 line-through tabular-nums font-medium">{fmt(liveSummary.subtotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="text-emerald-700 font-bold">Sconto</span>
+                        <span className="text-emerald-700 font-bold tabular-nums">− {fmt(liveSummary.discountAmount)}</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-emerald-200/50">
+                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-wider">Totale Cliente</span>
+                        <span className="text-base font-black text-gray-900 tabular-nums">{fmt(liveSummary.total)}</span>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-gray-400 italic mt-3 leading-relaxed">
+                    Lo sconto verrà mostrato al cliente con prezzo barrato. Il piano pagamenti viene aggiornato automaticamente.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </main>
