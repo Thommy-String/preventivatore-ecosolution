@@ -16,6 +16,7 @@ import MaterialsEditor from '../components/MaterialsEditor';
 import SectionMaterialsEditor from '../components/SectionMaterialsEditor';
 import RichTextEditor from '../components/RichTextEditor';
 import CompanyDataEditor from '../components/CompanyDataEditor';
+import AdminToolbar from '../components/AdminToolbar';
 
 // --- Componenti UI Helpers ---
 const Label = ({ children }) => (
@@ -63,6 +64,7 @@ export default function EditQuotePage() { // Non servono più props qui
   const { quoteId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Stato iniziale vuoto (lo riempiremo da Firebase)
   const [editingQuote, setEditingQuote] = useState({
@@ -577,6 +579,7 @@ export default function EditQuotePage() { // Non servono più props qui
       return;
     }
 
+    setSaving(true);
     try {
       // Salviamo il totale (eventualmente scontato) come "subtotal" del documento finale
       // così la pagina cliente continua a funzionare. Conserviamo anche l'imponibile lordo
@@ -601,51 +604,35 @@ export default function EditQuotePage() { // Non servono più props qui
       quoteToSave.id = docId;
 
       await setDoc(doc(db, "preventivi", docId), quoteToSave);
-      alert("✅ Preventivo salvato correttamente!");
 
-      if (!quoteId || quoteId === 'new') navigate(`/edit/${docId}`, { replace: true });
-      else navigate('/admin');
-
+      // Se è il primo salvataggio (quote nuovo) → aggiorna l'URL all'id reale,
+      // così l'utente resta nell'editor ma su una rotta valida.
+      if (!quoteId || quoteId === 'new') {
+        navigate(`/admin/quote/${docId}/edit`, { replace: true });
+      }
+      // ✓ NIENTE redirect alla dashboard. La toolbar mostrerà il flash "Salvato".
     } catch (error) {
       alert("ERRORE FIREBASE:\n" + error.message);
+      throw error; // così la toolbar non mostra il flash di successo
+    } finally {
+      setSaving(false);
     }
   };
 
-
-  const shareQuote = () => {
-    // window.location.origin restituisce "https://preventivo-pro-casa-parquet.vercel.app"
-    // quando sei sul sito principale.
-    const shareUrl = `${window.location.origin}/quote/${quoteId}`;
-
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => alert("Link copiato! Ora puoi inviarlo al cliente."));
-  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">Caricamento dal Cloud...</div>;
 
   return (
     <div className="bg-[#F5F5F7] min-h-screen font-sans pb-32">
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          {/* Tasto Condividi: appare solo se il preventivo è già stato salvato (ha un ID) */}
-          {quoteId && quoteId !== 'new' && (
-            <button
-              onClick={shareQuote}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold hover:bg-blue-100 transition-all border border-blue-100"
-            >
-              <LinkIcon size={16} />
-              <span className="hidden sm:inline">Copia Link Cliente</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleSave}
-            className="bg-black hover:bg-gray-800 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm"
-          >
-            <Save size={16} /> Salva Online
-          </button>
-        </div>
-      </header>
+      <AdminToolbar
+        quoteId={quoteId}
+        clientName={editingQuote.clientName}
+        projectName={editingQuote.projectName}
+        active="edit-quote"
+        hasContract={!!editingQuote.contractData}
+        onSave={handleSave}
+        saving={saving}
+      />
 
       <main className="max-w-6xl mx-auto p-6 md:p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -676,6 +663,28 @@ export default function EditQuotePage() { // Non servono più props qui
                   value={editingQuote.clientName}
                   onChange={handleDetailsChange}
                   placeholder="Nome Cliente"
+                />
+              </div>
+
+              {/* Indirizzo Cliente */}
+              <div className="md:col-span-2">
+                <Label>Indirizzo Cliente</Label>
+                <StyledInput
+                  name="clientAddress"
+                  value={editingQuote.clientAddress || ''}
+                  onChange={handleDetailsChange}
+                  placeholder="Es. Via Roma 12, Milano"
+                />
+              </div>
+
+              {/* Indirizzo Cliente */}
+              <div className="md:col-span-2">
+                <Label>Indirizzo Cliente</Label>
+                <StyledInput
+                  name="clientAddress"
+                  value={editingQuote.clientAddress || ''}
+                  onChange={handleDetailsChange}
+                  placeholder="Es. Via Roma 12, Milano"
                 />
               </div>
 

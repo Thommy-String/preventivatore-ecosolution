@@ -27,12 +27,18 @@ export function getDefaultTermsAndConditions(companyName) {
 
 /**
  * Ottiene il nome dell'azienda da visualizzare
- * @param {Object} companyData - Oggetto con i dati aziendali personalizzati
- * @returns {string} Il nome dell'azienda (custom o default)
+ * @param {Object} companyData - Oggetto con i dati aziendali personalizzati o preset
+ * @returns {string} Il nome dell'azienda (custom, preset selezionato o default ECO)
  */
 export function getCompanyDisplayName(companyData) {
   if (companyData?.useCustom && companyData?.name) {
     return companyData.name;
   }
-  return 'ECO SOLUTION S.a.s.';
+  // Mapping rapido dei preset (evita import circolare con companyPresets)
+  const presetNames = {
+    eco: 'ECO SOLUTION S.a.s.',
+    procasa: 'Pro Casa Parquet Milano',
+  };
+  const presetId = companyData?.preset || 'eco';
+  return presetNames[presetId] || 'ECO SOLUTION S.a.s.';
 }

@@ -5,6 +5,7 @@ import { db } from "../firebase";
 import { Download, ArrowLeft, Edit } from 'lucide-react';
 
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
+import AdminToolbar from '../components/AdminToolbar';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -28,7 +29,7 @@ const DEFAULT_ARTICLES = [
 // Articles whose clauses require double-signature under Art. 1341/1342 C.C.
 const VESSATORIE_IDS = ['art-garanzia', 'art-accettazione', 'art-recesso'];
 
-export default function ContractPage() {
+export default function ContractPage({ adminMode = false }) {
   const { quoteId } = useParams();
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,20 +91,19 @@ export default function ContractPage() {
   return (
     <div className="min-h-screen font-sans selection:bg-[#cce9ff] pb-20 pt-6 md:pt-12 overflow-x-hidden print:pt-0 print:pb-0 print:bg-white bg-[#f5f5f7]">
 
-      {/* ─── Navigation bar (hidden on print) ─── */}
-      <div className="max-w-[800px] mx-auto mb-4 px-6 print:hidden flex items-center justify-between">
-        <Link to={`/quote/${quoteId}`} className="inline-flex items-center gap-1.5 text-[13px] text-[#86868b] hover:text-[#1d1d1f] transition-colors font-medium">
-          <ArrowLeft size={14} />
-          Torna al preventivo
-        </Link>
-        <Link 
-          to={`/admin/contract/${quoteId}/edit`}
-          className="inline-flex items-center gap-1.5 text-[13px] text-blue-600 hover:text-blue-700 transition-colors font-medium"
-        >
-          <Edit size={14} />
-          Modifica contratto
-        </Link>
-      </div>
+      {/* ─── Toolbar admin (solo in /admin/contract/:id/preview) ─── */}
+      {adminMode && (
+        <div className="-mt-6 md:-mt-12 mb-6 print:hidden">
+          <AdminToolbar
+            quoteId={quoteId}
+            clientName={quote.clientName}
+            projectName={quote.projectName}
+            active="preview-contract"
+            hasContract={true}
+            onDownloadPdf={handlePrint}
+          />
+        </div>
+      )}
 
       <main className="max-w-[800px] mx-auto bg-white min-h-[1000px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.06)] sm:rounded-[24px] overflow-hidden relative print:max-w-full print:shadow-none print:rounded-none">
 
@@ -586,13 +586,15 @@ export default function ContractPage() {
             <Download size={18} />
             Scarica Contratto
           </button>
-          <Link
-            to={`/admin/contract/${quoteId}/edit`}
-            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-white text-[#1d1d1f] text-[15px] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-lg shadow-black/5 border border-gray-200"
-          >
-            <Edit size={18} />
-            Modifica Contratto
-          </Link>
+          {adminMode && (
+            <Link
+              to={`/admin/contract/${quoteId}/edit`}
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-white text-[#1d1d1f] text-[15px] font-semibold rounded-xl hover:bg-gray-50 transition-all shadow-lg shadow-black/5 border border-gray-200"
+            >
+              <Edit size={18} />
+              Modifica Contratto
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Save, Plus, Trash2, ArrowUp, ArrowDown, Eye, ArrowLeft } from 'lucide-react';
+import AdminToolbar from '../components/AdminToolbar';
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -207,12 +208,14 @@ export default function EditContractPage() {
       const docRef = doc(db, "preventivi", quoteId);
       const docSnap = await getDoc(docRef);
       const existing = docSnap.exists() ? docSnap.data() : {};
-      
+
       await setDoc(docRef, { ...existing, contractData });
-      alert("✅ Contratto salvato!");
-      navigate(`/contract/${quoteId}`);
+      // Aggiorna lo stato locale così la toolbar mostra "Editor Contratto" come esistente
+      setQuote(prev => ({ ...(prev || {}), contractData }));
+      // ✓ Resta nell'editor. Il flash "Salvato" è gestito da AdminToolbar.
     } catch (error) {
       alert("Errore salvataggio: " + error.message);
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -229,35 +232,15 @@ export default function EditContractPage() {
   return (
     <div className="bg-[#F5F5F7] min-h-screen font-sans pb-32">
 
-      {/* ─── HEADER ─── */}
-      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/admin" className="text-gray-400 hover:text-gray-700 transition-colors">
-              <ArrowLeft size={20} />
-            </Link>
-            <div>
-              <h1 className="text-sm font-black text-gray-900 leading-tight">Editor Contratto</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{quote.clientName} — {quote.projectName}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link 
-              to={`/contract/${quoteId}`}
-              className="hidden md:flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
-            >
-              <Eye size={14} /> Anteprima
-            </Link>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-black rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50"
-            >
-              <Save size={14} /> {saving ? 'Salvataggio...' : 'Salva Contratto'}
-            </button>
-          </div>
-        </div>
-      </header>
+      <AdminToolbar
+        quoteId={quoteId}
+        clientName={quote.clientName}
+        projectName={quote.projectName}
+        active="edit-contract"
+        hasContract={true}
+        onSave={handleSave}
+        saving={saving}
+      />
 
       <main className="max-w-4xl mx-auto p-6 space-y-6">
 
@@ -521,7 +504,7 @@ export default function EditContractPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link 
-              to={`/contract/${quoteId}`}
+              to={`/admin/contract/${quoteId}/preview`}
               className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
             >
               <Eye size={14} /> Anteprima

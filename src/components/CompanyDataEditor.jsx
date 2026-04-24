@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { PRESET_LIST, COMPANY_PRESETS } from '../config/companyPresets';
 
 const Label = ({ children }) => (
   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">
@@ -51,6 +52,9 @@ export default function CompanyDataEditor({ companyData, setEditingQuote }) {
     sdi: ''
   };
 
+  const currentPresetId = data.preset || 'eco';
+  const currentPreset = COMPANY_PRESETS[currentPresetId] || COMPANY_PRESETS.eco;
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200/60">
       <div className="flex items-center justify-between mb-5">
@@ -65,18 +69,62 @@ export default function CompanyDataEditor({ companyData, setEditingQuote }) {
               : 'bg-gray-50 border-gray-200 text-gray-500'
           }`}
         >
-          {data.useCustom ? '✓ Personalizzati' : 'Usa ECO SOLUTION'}
+          {data.useCustom ? '✓ Personalizzati' : 'Usa preset'}
         </button>
       </div>
 
       {!data.useCustom ? (
-        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <p className="text-sm text-blue-700 font-medium">
-            Questo preventivo userà i dati di <strong>ECO SOLUTION S.a.s.</strong>
-          </p>
-          <p className="text-xs text-blue-600 mt-1">
-            Clicca su "Personalizzati" per cambiare i dati solo per questo preventivo.
-          </p>
+        <div className="space-y-3">
+          {/* ── Selettore preset ── */}
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-1">
+              Scegli azienda
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {PRESET_LIST.map(p => {
+                const active = currentPresetId === p.id;
+                const initials = (p.name || '?').split(/\s+/).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => updateCompanyData({ preset: p.id, useCustom: false })}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
+                      active
+                        ? 'border-purple-500 bg-purple-50/50 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    {p.logo ? (
+                      <img src={p.logo} alt={p.name} className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-700 flex items-center justify-center text-[11px] font-bold shrink-0">
+                        {initials}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-900 truncate">{p.shortName || p.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{p.email || p.website || p.vatId || '—'}</p>
+                    </div>
+                    {active && (
+                      <span className="text-purple-500 text-lg leading-none shrink-0">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Anteprima dati preset ── */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-1">
+            <p className="text-sm font-bold text-gray-900">{currentPreset.name}</p>
+            {currentPreset.email && <p className="text-xs text-gray-500">📧 {currentPreset.email}</p>}
+            {currentPreset.phone && <p className="text-xs text-gray-500">☎ {currentPreset.phone}</p>}
+            {currentPreset.website && <p className="text-xs text-gray-500">🌐 {currentPreset.website}</p>}
+            {currentPreset.vatId && <p className="text-xs text-gray-500">P.IVA {currentPreset.vatId}</p>}
+            <p className="text-[10px] text-gray-400 italic pt-1">
+              Clicca "Personalizzati" per sovrascrivere i dati solo per questo preventivo.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="space-y-5">
@@ -252,7 +300,7 @@ export default function CompanyDataEditor({ companyData, setEditingQuote }) {
               }}
               className="text-xs font-bold text-gray-500 hover:text-red-500 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-red-200 transition-all"
             >
-              Ripristina ECO SOLUTION
+              Ripristina preset
             </button>
           </div>
         </div>
