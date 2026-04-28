@@ -1,0 +1,22 @@
+// Regole di sicurezza Firestore
+// Da incollare in Firebase Console → Firestore Database → Regole
+// (oppure deploy via `firebase deploy --only firestore:rules` se usi Firebase CLI)
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Collezione "preventivi" ───
+    // - LETTURA: chiunque (necessario per la pagina pubblica /quote/:id)
+    // - SCRITTURA / ELIMINAZIONE: solo utenti autenticati
+    match /preventivi/{quoteId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // ─── Tutto il resto: bloccato ───
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

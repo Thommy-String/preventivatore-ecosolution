@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import {
-  Loader2, Plus, Search, X, Copy, ExternalLink, Trash2, FileText, ArrowRight, Link as LinkIcon
+  Loader2, Plus, Search, X, Copy, ExternalLink, Trash2, FileText, ArrowRight, Link as LinkIcon, LogOut
 } from 'lucide-react';
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
 import { resolveCompanyData } from '../config/companyPresets';
+import { useAuth } from '../context/AuthContext';
 
 const formatCurrency = (v) =>
   new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
@@ -100,6 +101,7 @@ function IconBtn({ title, onClick, children, danger, accent }) {
 }
 
 export default function AdminDashboard() {
+  const { user, logout } = useAuth();
   const [quotes, setQuotes] = useState([]);
   const [clientName, setClientName] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -273,11 +275,22 @@ export default function AdminDashboard() {
               <p className="text-[12px] sm:text-[13px] text-[#86868b] mt-1 leading-none">Gestione progetti</p>
             </div>
           </div>
-          <button onClick={() => setShowForm(f => !f)}
-            className="flex items-center gap-1.5 h-9 sm:h-10 px-3.5 sm:px-5 text-[13px] sm:text-[14px] font-semibold text-white bg-[#0071e3] hover:bg-[#0077ED] active:scale-[0.97] transition-all rounded-lg shrink-0">
-            {showForm ? <X size={14} /> : <Plus size={14} />}
-            <span className="hidden sm:inline">{showForm ? 'Chiudi' : 'Nuovo'}</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setShowForm(f => !f)}
+              className="flex items-center gap-1.5 h-9 sm:h-10 px-3.5 sm:px-5 text-[13px] sm:text-[14px] font-semibold text-white bg-[#0071e3] hover:bg-[#0077ED] active:scale-[0.97] transition-all rounded-lg">
+              {showForm ? <X size={14} /> : <Plus size={14} />}
+              <span className="hidden sm:inline">{showForm ? 'Chiudi' : 'Nuovo'}</span>
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('Vuoi davvero uscire?')) logout();
+              }}
+              title={user?.email ? `Esci (${user.email})` : 'Esci'}
+              className="flex items-center justify-center w-9 sm:w-10 h-9 sm:h-10 text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg transition-all"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </header>
 
