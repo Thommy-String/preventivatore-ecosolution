@@ -1,4 +1,5 @@
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
+import proCasaLogo from '../assets/images/pro casa parquet logo.png';
 
 // Preset aziendali predefiniti.
 // Ogni quote può avere companyData.preset = 'eco' | 'procasa' | (assente => 'eco' di default)
@@ -30,7 +31,7 @@ export const COMPANY_PRESETS = {
     name: 'Pro Casa Parquet Milano',
     shortName: 'Pro Casa Parquet',
     tagline: 'Posa Pavimenti & Parquet',
-    logo: null,
+    logo: proCasaLogo,
     address: 'Milano',
     addressLine2: '',
     phone: '+39 334 222 1212',
