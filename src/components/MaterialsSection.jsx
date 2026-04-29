@@ -8,13 +8,13 @@ export default function MaterialsSection({ materials }) {
 
       {/* Section Header */}
       <div data-pdf-block="global-materials-header" className="text-center mb-16 md:mb-20">
-        <p className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.25em] mb-3">
+        <p className="text-[14px] font-black text-[#86868b] uppercase tracking-[0.25em] mb-3">
           Materiali
         </p>
-        <h2 className="text-3xl md:text-[42px] font-bold text-[#1d1d1f] tracking-tight leading-tight">
+        <h2 className="text-3xl md:text-[45px] font-bold text-[#1d1d1f] tracking-tight leading-tight">
           Cosa utilizziamo.
         </h2>
-        <p className="text-[15px] md:text-[17px] text-[#86868b] mt-3 max-w-lg mx-auto leading-relaxed">
+        <p className="text-[18px] md:text-[20px] text-[#86868b] mt-3 max-w-lg mx-auto leading-relaxed">
           Una selezione di materiali di alta qualità, scelti per garantire prestazioni e durata nel tempo.
         </p>
       </div>
@@ -26,7 +26,7 @@ export default function MaterialsSection({ materials }) {
 
             {/* Material Number */}
             <div className="mb-6">
-              <span className="text-[12px] font-bold text-[#86868b] opacity-30 tabular-nums tracking-wide">
+              <span className="text-[15px] font-bold text-[#86868b] opacity-30 tabular-nums tracking-wide">
                 0{index + 1}
               </span>
             </div>
@@ -51,7 +51,7 @@ export default function MaterialsSection({ materials }) {
                   {material.name}
                 </h3>
                 {material.description && (
-                  <p className="text-[15px] text-[#86868b] mt-2 leading-relaxed max-w-2xl">
+                  <p className="text-[18px] text-[#86868b] mt-2 leading-relaxed max-w-2xl">
                     {material.description}
                   </p>
                 )}
@@ -60,7 +60,7 @@ export default function MaterialsSection({ materials }) {
               {/* Specs Table — Apple Style */}
               {material.specs && material.specs.length > 0 && (
                 <div className="w-full">
-                  <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.2em] mb-4">
+                  <p className="text-[13px] font-bold text-[#86868b] uppercase tracking-[0.2em] mb-4">
                     Specifiche Tecniche
                   </p>
                   <div className="border-t border-[#e8e8ed]">
@@ -69,10 +69,10 @@ export default function MaterialsSection({ materials }) {
                         key={sIdx}
                         className="flex items-baseline justify-between py-3 border-b border-[#e8e8ed]/70 gap-4"
                       >
-                        <span className="text-[13px] text-[#86868b] font-medium shrink-0">
+                        <span className="text-[16px] text-[#86868b] font-medium shrink-0">
                           {spec.label}
                         </span>
-                        <span className="text-[13px] text-[#1d1d1f] font-semibold text-right">
+                        <span className="text-[16px] text-[#1d1d1f] font-semibold text-right">
                           {spec.value}
                         </span>
                       </div>

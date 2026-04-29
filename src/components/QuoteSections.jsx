@@ -14,7 +14,7 @@ function SectionMaterials({ materials }) {
     return (
         <div className="mt-5 pt-4">
             {/* Label — solo testo, minimal */}
-            <p data-pdf-block="materials-label" className="text-[11px] font-semibold text-[#86868b] uppercase tracking-[0.08em] mb-4">
+            <p data-pdf-block="materials-label" className="text-[14px] font-semibold text-[#86868b] uppercase tracking-[0.08em] mb-4">
                 Materiale utilizzato
             </p>
 
@@ -44,7 +44,7 @@ function SectionMaterials({ materials }) {
                             <div className="px-5 py-4">
                                 {/* Name + Product Link */}
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                    <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
+                                    <h4 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                                         {material.name}
                                     </h4>
                                     {material.link && (
@@ -52,7 +52,7 @@ function SectionMaterials({ materials }) {
                                             href={material.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[11px] text-blue-500 font-medium underline decoration-blue-400/50 decoration-1 underline-offset-2 hover:text-blue-600 hover:decoration-blue-500 transition-colors shrink-0 print:hidden"
+                                            className="inline-flex items-center gap-1 text-[14px] text-blue-500 font-medium underline decoration-blue-400/50 decoration-1 underline-offset-2 hover:text-blue-600 hover:decoration-blue-500 transition-colors shrink-0 print:hidden"
                                         >
                                             Vedi prodotto
                                             <ExternalLink size={10} className="opacity-70" />
@@ -62,7 +62,7 @@ function SectionMaterials({ materials }) {
 
                                 {/* Description */}
                                 {material.description && (
-                                    <p className="text-[12px] text-[#86868b] mt-1 leading-relaxed">
+                                    <p className="text-[15px] text-[#86868b] mt-1 leading-relaxed">
                                         {material.description}
                                     </p>
                                 )}
@@ -75,10 +75,10 @@ function SectionMaterials({ materials }) {
                                                 key={sIdx}
                                                 className="flex items-baseline justify-between py-2 border-b border-[#e8e8ed]/50 last:border-b-0 gap-3"
                                             >
-                                                <span className="text-[11px] text-[#86868b] font-medium">
+                                                <span className="text-[14px] text-[#86868b] font-medium">
                                                     {spec.label}
                                                 </span>
-                                                <span className="text-[11px] text-[#1d1d1f] font-semibold text-right">
+                                                <span className="text-[14px] text-[#1d1d1f] font-semibold text-right">
                                                     {spec.value}
                                                 </span>
                                             </div>
@@ -109,8 +109,8 @@ export default function QuoteSections({ sections }) {
 
                         {/* Separatore tra sezioni */}
                         {index > 0 && (
-                            <div data-pdf-block={`separator-${index}`} className="py-10 md:py-14 flex items-center justify-center">
-                                <div className="w-10 h-[1px] bg-[#d2d2d7]/60 rounded-full" />
+                            <div data-pdf-block={`separator-${index}`} className="py-24 md:py-14 flex items-center justify-center">
+                                <div className="w-20 h-[1px] bg-[#d2d2d7]/60 rounded-full" />
                             </div>
                         )}
 
@@ -118,16 +118,16 @@ export default function QuoteSections({ sections }) {
                         <div data-pdf-block={`heading-${index}`} className="flex flex-col md:flex-row gap-4 md:gap-6 items-baseline">
                             {/* Numero Sezione */}
                             <div className="md:w-[60px] shrink-0">
-                                <span className="text-[13px] font-bold text-[#86868b] opacity-40 tabular-nums">0{index + 1}</span>
+                                <span className="text-[16px] font-bold text-[#86868b] opacity-40 tabular-nums">0{index + 1}</span>
                             </div>
 
                             {/* Titolo + Descrizione only */}
                             <div className="w-full">
-                                <h2 className="text-xl md:text-2xl font-bold text-[#1d1d1f] tracking-tight leading-tight mb-1">
+                                <h2 className="text-xl md:text-2xl font-bold text-[#1d1d1f] tracking-[-0.03em] leading-tight mb-1">
                                     {section.title}
                                 </h2>
                                 {section.description && (
-                                    <div className="text-[14px] leading-relaxed text-[#86868b] max-w-2xl mt-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2 [&_li]:py-0.5 [&_p]:my-1 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
+                                    <div className="text-[17px] leading-relaxed text-[#86868b] max-w-2xl mt-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:my-2 [&_li]:py-0.5 [&_p]:my-1 [&_b]:font-bold [&_strong]:font-bold" dangerouslySetInnerHTML={{ __html: section.description }} />
                                 )}
                             </div>
                         </div>
@@ -144,7 +144,7 @@ export default function QuoteSections({ sections }) {
                                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
                                             />
                                             {section.photos.length > 1 && photo.type && (
-                                                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider text-[#1d1d1f] shadow-sm">
+                                                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-md text-[14px] font-bold uppercase tracking-wider text-[#1d1d1f] shadow-sm">
                                                     {photo.type === 'before' ? 'Attuale' : 'Previsto'}
                                                 </div>
                                             )}
@@ -160,12 +160,12 @@ export default function QuoteSections({ sections }) {
                                 <div
                                     key={idx}
                                     data-pdf-block={`item-${index}-${idx}`}
-                                    className="flex justify-between items-start gap-6 py-3 border-b border-[#e8e8ed]/80 last:border-b-0 group print:break-inside-avoid print:py-2.5"
+                                    className="flex justify-between items-start gap-6 py-6 border-b border-[#e8e8ed]/80 last:border-b-0 group print:break-inside-avoid print:py-3.5"
                                 >
                                     {/* Sinistra: Descrizione + dettaglio quantità */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[13px] leading-tight text-[#1d1d1f] font-medium [&_p]:my-0" dangerouslySetInnerHTML={{ __html: item.description }} />
-                                        <p className="text-[11px] text-[#a1a1a6] mt-1 tabular-nums">
+                                        <div className="text-[16px] leading-tight text-[#1d1d1f] font-medium [&_p]:my-0" dangerouslySetInnerHTML={{ __html: item.description }} />
+                                        <p className="text-[14px] text-[#a1a1a6] mt-1 tabular-nums">
                                             {item.quantity} {item.unit} × {formatCurrency(item.price)}
                                         </p>
                                     </div>
@@ -173,11 +173,11 @@ export default function QuoteSections({ sections }) {
                                     {/* Destra: Totale voce */}
                                     <div className="shrink-0 text-right pt-0.5">
                                         {item.originalPrice && parseFloat(item.originalPrice) > 0 && (
-                                            <span className="text-[11px] text-[#ff3b30] line-through tabular-nums mr-2 opacity-70">
+                                            <span className="text-[14px] text-[#ff3b30] line-through tabular-nums mr-2 opacity-70">
                                                 {formatCurrency(parseFloat(item.originalPrice) * item.quantity)}
                                             </span>
                                         )}
-                                        <span className="text-[13px] font-semibold text-[#1d1d1f] tabular-nums">
+                                        <span className="text-[16px] font-semibold text-[#1d1d1f] tabular-nums">
                                             {formatCurrency(item.price * item.quantity)}
                                         </span>
                                     </div>

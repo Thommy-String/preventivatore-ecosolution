@@ -46,10 +46,10 @@ export default function TeamSection({ teamMembers }) {
                 </div>
 
                 <div className="flex flex-col gap-1.5 px-4 print:px-0">
-                  <div className="text-[10px] font-bold text-blue-500/80 uppercase tracking-[0.2em] print:text-blue-600">
+                  <div className="text-[13px] font-bold text-blue-500/80 uppercase tracking-[0.2em] print:text-blue-600">
                     {member.role}
                   </div>
-                  <h3 className="text-[20px] md:text-2xl font-bold text-white tracking-tight print:text-lg print:text-black">
+                  <h3 className="text-[23px] md:text-2xl font-bold text-white tracking-tight print:text-lg print:text-black">
                     {member.name}
                   </h3>
 
@@ -58,7 +58,7 @@ export default function TeamSection({ teamMembers }) {
                       href={`https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 text-[13px] text-white/40 hover:text-white underline decoration-white/20 underline-offset-4 transition-all print:hidden"
+                      className="mt-1 text-[16px] text-white/40 hover:text-white underline decoration-white/20 underline-offset-4 transition-all print:hidden"
                     >
                     Apri chat Whatsapp
                     </a>
@@ -66,13 +66,13 @@ export default function TeamSection({ teamMembers }) {
 
                   {/* Print-only phone number text */}
                   {phoneNumber && (
-                    <div className="hidden print:block text-[11px] text-gray-500 mt-1">
+                    <div className="hidden print:block text-[14px] text-gray-500 mt-1">
                       {phoneNumber}
                     </div>
                   )}
                   
                   {member.quirk && (
-                    <p className="mt-3 max-w-xs text-[14px] leading-relaxed text-white/40 font-medium md:text-white/50 print:text-gray-600 print:text-[12px] print:mt-1">
+                    <p className="mt-3 max-w-xs text-[17px] leading-relaxed text-white/40 font-medium md:text-white/50 print:text-gray-600 print:text-[15px] print:mt-1">
                       {member.quirk}
                     </p>
                   )}
