@@ -98,7 +98,7 @@ export default function QuoteSections({ sections }) {
     if (!sections || sections.length === 0) return null;
 
     return (
-        <div data-pdf-block="sections-wrapper" className="bg-white px-6 py-10 md:px-24 pb-20">
+        <div data-pdf-block="sections-wrapper" className="bg-[#fafafa] px-6 py-10 md:px-24 pb-20 print:bg-white">
             {sections.map((section, index) => {
                 const sectionTotal = section.items.reduce((a, b) => a + (b.price * b.quantity), 0);
                 const totalQty = section.items.reduce((a, b) => a + parseFloat(b.quantity || 0), 0);
