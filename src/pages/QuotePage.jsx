@@ -178,22 +178,22 @@ export default function QuotePage({ adminMode = false }) {
 
                   {companyAddress && (
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
-                      <p className="text-[13px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
+                      <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
+                      <p className="text-[12px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
                     </div>
                   )}
 
                   {(companyPhone || companyEmail) && (
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
+                      <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
                       <div className="space-y-0.5">
                         {companyPhone && (
-                          <a href={`tel:${companyPhone.replace(/\s/g, '')}`} className="block text-[13px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                          <a href={`tel:${companyPhone.replace(/\s/g, '')}`} className="block text-[12px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
                             {companyPhone}
                           </a>
                         )}
                         {companyEmail && (
-                          <a href={`mailto:${companyEmail}`} className="block text-[13px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
+                          <a href={`mailto:${companyEmail}`} className="block text-[12px] text-blue-600 font-medium hover:text-blue-700 transition-colors underline decoration-blue-600 decoration-1 underline-offset-2">
                             {companyEmail}
                           </a>
                         )}
@@ -202,16 +202,16 @@ export default function QuotePage({ adminMode = false }) {
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
-                    <p className="text-[13px] text-[#1d1d1f] font-medium">{quote.date}</p>
-                    <p className="text-[12px] text-[#a1a1a6]">Valido 30 giorni</p>
+                    <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
+                    <p className="text-[12px] text-[#1d1d1f] font-medium">{quote.date}</p>
+                    <p className="text-[11px] text-[#a1a1a6]">Valido 30 giorni</p>
                   </div>
 
                   {companyVatId && (
                     <div className="flex-1 min-w-0 text-right">
-                      <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
-                      <p className="text-[13px] text-[#1d1d1f] font-medium">{companyVatId}</p>
-                      {companySdi && <p className="text-[12px] text-[#a1a1a6]">SDI {companySdi}</p>}
+                      <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
+                      <p className="text-[12px] text-[#1d1d1f] font-medium">{companyVatId}</p>
+                      {companySdi && <p className="text-[11px] text-[#a1a1a6]">SDI {companySdi}</p>}
                     </div>
                   )}
                 </div>

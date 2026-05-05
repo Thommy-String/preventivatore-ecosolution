@@ -55,15 +55,18 @@ export default function TimelineDay({
 
     return (
         <div className="relative mb-40 md:mb-56 ml-4 md:ml-16 pl-1 md:pl-10 border-l-2 border-gray-100 last:mb-24">
-            <div className="absolute left-[-10px] top-0 w-6 h-6 bg-white flex items-center justify-center text-[8px] font-black z-50 uppercase italic">
-                Giorno:{day}
-            </div>
-
-            <div
+                <div
                 ref={scrollRef}
                 className="overflow-x-auto scroll-smooth scrollbar-hide pt-28 md:pt-32 pb-4 px-2 md:px-10 relative"
             >
                 <div className="relative pr-20" style={{ width: (currentEndHour - currentStartHour) * hourWidth + 40 }}>
+
+                    {/* GIORNO — watermark top-left */}
+                    <div className="absolute top-0 left-4 pointer-events-none z-0 select-none">
+                        <span className="text-[56px] md:text-[72px] font-black text-[#ededf0] tracking-tight leading-none">
+                            Giorno {day}
+                        </span>
+                    </div>
                     <div className="relative h-16 md:h-20 flex items-center mb-10 md:mb-14">
 
                         {/* 1. PIN ARRIVO - Cambiato h-full con un valore che scende giù */}
