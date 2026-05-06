@@ -1,4 +1,5 @@
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 
 export default function MaterialsSection({ materials }) {
   if (!materials || materials.length === 0) return null;
@@ -14,9 +15,7 @@ export default function MaterialsSection({ materials }) {
         <h2 className="text-3xl md:text-[45px] font-bold text-[#1d1d1f] tracking-tight leading-tight">
           Cosa utilizziamo.
         </h2>
-        <p className="text-[18px] md:text-[20px] text-[#86868b] mt-3 max-w-lg mx-auto leading-relaxed">
-          Una selezione di materiali di alta qualità, scelti per garantire prestazioni e durata nel tempo.
-        </p>
+       
       </div>
 
       {/* Materials Grid */}
@@ -54,6 +53,17 @@ export default function MaterialsSection({ materials }) {
                   <p className="text-[18px] text-[#86868b] mt-2 leading-relaxed max-w-2xl">
                     {material.description}
                   </p>
+                )}
+                {material.datasheetUrl && (
+                  <a
+                    href={material.datasheetUrl.startsWith('http') ? material.datasheetUrl : `https://${material.datasheetUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-[15px] text-blue-500 font-medium underline decoration-blue-400/50 decoration-1 underline-offset-2 hover:text-blue-600 hover:decoration-blue-500 transition-colors print:hidden"
+                  >
+                    <ExternalLink size={14} className="opacity-70" />
+                    Scheda tecnica
+                  </a>
                 )}
               </div>
 

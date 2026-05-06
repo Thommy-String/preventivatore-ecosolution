@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, X, Image as ImageIcon, GripVertical } from 'lucide-react';
+import { Plus, Trash2, X, Image as ImageIcon, GripVertical, ExternalLink } from 'lucide-react';
 
 // Helper UI Components (matching EditQuotePage style)
 const Label = ({ children }) => (
@@ -185,6 +185,19 @@ export default function MaterialsEditor({ materials = [], setEditingQuote }) {
                       value={material.description}
                       onChange={(e) => handleMaterialChange(mIndex, 'description', e.target.value)}
                       placeholder="Es. Alta efficienza, celle monocristalline"
+                    />
+                  </div>
+                </div>
+
+                {/* Datasheet Link */}
+                <div>
+                  <Label>Link Scheda Tecnica (opzionale)</Label>
+                  <div className="flex items-center gap-2">
+                    <ExternalLink size={15} className="text-gray-400 shrink-0" />
+                    <StyledInput
+                      value={material.datasheetUrl || ''}
+                      onChange={(e) => handleMaterialChange(mIndex, 'datasheetUrl', e.target.value)}
+                      placeholder="https://example.com/scheda-tecnica.pdf"
                     />
                   </div>
                 </div>

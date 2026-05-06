@@ -292,13 +292,11 @@ export default function QuotePage({ adminMode = false }) {
                   <User size={16} className="text-gray-400 opacity-80" />
                   <span>Cliente</span>
                 </div>
-                <div className="flex-1 flex items-center">
-                  <div className="inline-flex items-center gap-2 pl-1 pr-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 transition-colors cursor-default">
-                    <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[12px] font-bold uppercase">
-                      {quote.clientName ? quote.clientName.charAt(0) : 'C'}
-                    </div>
-                    <span className="text-[16px] font-medium text-gray-700">{quote.clientName}</span>
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[11px] font-bold uppercase shrink-0">
+                    {quote.clientName ? quote.clientName.charAt(0) : 'C'}
                   </div>
+                  <span className="text-[17px] font-medium text-[#1d1d1f]">{quote.clientName}</span>
                 </div>
               </div>
 
@@ -319,8 +317,8 @@ export default function QuotePage({ adminMode = false }) {
                     };
                     const style = statusColors[quote.statusColor] || statusColors.blue;
                     return (
-                      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[16px] font-medium border ${style.bg} ${style.text} ${style.border}`}>
-                        <div className={`w-2 h-2 rounded-full animate-pulse ${style.dot}`} />
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[16px] font-medium border ${style.bg} ${style.text} ${style.border}`}>
+                        <div className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${style.dot}`} />
                         {quote.statusText || "In elaborazione"}
                       </div>
                     );
@@ -365,6 +363,17 @@ export default function QuotePage({ adminMode = false }) {
         </header>
 
         <hr data-pdf-block="hr" className="border-[#f0f0f0] mx-10 md:mx-24 mb-16 print:hidden" />
+
+        {/* --- IMMAGINE HEADER --- */}
+        {quote.headerImageUrl && (
+          <div data-pdf-block="header-image" className="mx-6 md:mx-24 mb-12 print:mb-8 rounded-[20px] md:rounded-[28px] overflow-hidden">
+            <img
+              src={quote.headerImageUrl}
+              alt=""
+              className="w-full object-cover max-h-[320px] md:max-h-[420px]"
+            />
+          </div>
+        )}
 
         {/* --- CRONOPROGRAMMA --- */}
         <div data-pdf-block="timeline" className="px-0 md:px-10 mb-12 print:break-inside-avoid print:mb-6">

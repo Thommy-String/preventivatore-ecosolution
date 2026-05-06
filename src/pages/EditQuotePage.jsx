@@ -786,6 +786,53 @@ export default function EditQuotePage() { // Non servono più props qui
                   Se lasciato vuoto, verrà calcolata in automatico dalle ore.
                 </p>
               </div>
+
+              {/* Immagine Header */}
+              <div className="md:col-span-2">
+                <Label>Immagine Header (opzionale)</Label>
+                <p className="text-[10px] text-gray-400 mb-2 ml-1">Appare come banner sotto l'intestazione del preventivo.</p>
+                {editingQuote.headerImageUrl ? (
+                  <div className="relative w-full aspect-[3/1] max-h-[200px] rounded-xl overflow-hidden border border-gray-200 bg-gray-100 group">
+                    <img src={editingQuote.headerImageUrl} alt="Header" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => setEditingQuote(prev => ({ ...prev, headerImageUrl: '' }))}
+                      className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative w-full aspect-[3/1] max-h-[200px] border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+                    <ImageIcon className="text-gray-400 mb-2" size={28} />
+                    <span className="text-xs text-gray-500 font-medium">Carica immagine header</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const img = new Image();
+                          img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 1400;
+                            const scale = Math.min(1, MAX_WIDTH / img.width);
+                            canvas.width = img.width * scale;
+                            canvas.height = img.height * scale;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            setEditingQuote(prev => ({ ...prev, headerImageUrl: canvas.toDataURL('image/jpeg', 0.8) }));
+                          };
+                          img.src = ev.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
               {/* --- FINE NUOVI CAMPI --- */}
 
               {/* Note Interne */}
