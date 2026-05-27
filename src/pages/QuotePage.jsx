@@ -498,6 +498,14 @@ export default function QuotePage({ adminMode = false }) {
                       </span>
                     </div>
                   </>
+                ) : quote.regimeForfettario ? (
+                  <p className="text-[12px] text-[#86868b] mt-3 leading-relaxed border-t border-[#e8e8ed] pt-3">
+                    Operazione non soggetta a IVA ai sensi della Legge 190/2014 — Regime Forfettario
+                  </p>
+                ) : quote.summary.vatPercentage === 0 ? (
+                  <p className="text-[13px] text-[#86868b] mt-3 border-t border-[#e8e8ed] pt-3">
+                    Prezzi IVA esclusa (0%)
+                  </p>
                 ) : (
                   <p className="text-[24px] text-[#86868b] mt-1.5 text-right">
                     * al netto di IVA

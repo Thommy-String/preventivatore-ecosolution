@@ -1721,6 +1721,24 @@ export default function EditQuotePage() { // Non servono più props qui
                       </div>
                     </div>
                   )}
+                  {currentVat === 0 && (
+                    <div className="mt-3">
+                      <label className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={!!editingQuote.regimeForfettario}
+                          onChange={(e) => setEditingQuote(prev => ({ ...prev, regimeForfettario: e.target.checked }))}
+                          className="mt-0.5 accent-amber-600 w-4 h-4 shrink-0"
+                        />
+                        <div>
+                          <p className="text-[12px] font-bold text-amber-800 leading-tight">Regime Forfettario</p>
+                          <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">
+                            Nel PDF apparirà: <em>"Operazione non soggetta a IVA ai sensi della Legge 190/2014"</em>
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  )}
                   <p className="text-[10px] text-gray-400 italic mt-3 leading-relaxed">
                     L'IVA verrà mostrata sul preventivo come riga separata sotto l'imponibile.
                   </p>

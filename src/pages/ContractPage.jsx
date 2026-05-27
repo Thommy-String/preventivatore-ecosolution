@@ -4,8 +4,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Download, ArrowLeft, Edit } from 'lucide-react';
 
-import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
 import AdminToolbar from '../components/AdminToolbar';
+import { resolveCompanyData } from '../config/companyPresets';
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
@@ -51,7 +51,8 @@ export default function ContractPage({ adminMode = false }) {
 
   const handlePrint = () => {
     const originalTitle = document.title;
-    document.title = `Contratto ${quote.clientName || 'Cliente'} - EcoSolution`;
+    const cName = resolveCompanyData(quote?.companyData)?.name || 'Azienda';
+    document.title = `Contratto ${quote?.clientName || 'Cliente'} - ${cName}`;
     window.print();
     setTimeout(() => { document.title = originalTitle; }, 1000);
   };
@@ -59,9 +60,19 @@ export default function ContractPage({ adminMode = false }) {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-[#86868b] text-sm">Caricamento contratto...</div>;
   if (!quote) return <div className="min-h-screen flex items-center justify-center text-[#86868b] text-sm">Contratto non trovato.</div>;
 
+  // ─── Dati azienda appaltante ───
+  // Se il contratto ha un override preset, ha la precedenza su quote.companyData
+  const c = resolveCompanyData(
+    quote.contractData?.companyOverridePreset
+      ? { preset: quote.contractData.companyOverridePreset }
+      : quote.companyData
+  );
+
   // ─── Read contractData (or use defaults) ───
   const cd = quote.contractData || {};
-  const vatRate = cd.vatRate ?? 10;
+  // vatRate: preferisce il valore salvato nel contratto, poi quello del preventivo, poi 0 (mai hardcoded 10)
+  const vatRate = cd.vatRate !== undefined ? cd.vatRate : (parseFloat(quote.vatPercentage) || 0);
+  const regimeForfettario = cd.regimeForfettario ?? quote.regimeForfettario ?? false;
   // If articles were saved via EditContractPage, respect them exactly (no forced merge).
   // Defaults are only used if no contractData has ever been saved.
   const articles = cd.articles?.length ? cd.articles : DEFAULT_ARTICLES;
@@ -114,10 +125,16 @@ export default function ContractPage({ adminMode = false }) {
           
           <div className="flex items-start justify-between gap-6 mb-10">
             <div className="flex items-center gap-4">
-              <img src={ecoLogo} alt="Eco Solution" className="w-14 h-14 object-contain rounded-lg border border-black/5" />
+              {c.logo ? (
+                <img src={c.logo} alt={c.name} className="w-14 h-14 object-contain rounded-lg border border-black/5" />
+              ) : (
+                <div className="w-14 h-14 rounded-lg bg-[#1d1d1f] flex items-center justify-center shrink-0">
+                  <span className="text-white text-[18px] font-black">{c.name.slice(0, 2).toUpperCase()}</span>
+                </div>
+              )}
               <div>
-                <h2 className="text-[15px] font-bold text-[#1d1d1f] tracking-tight leading-tight uppercase">ECO SOLUTION S.a.s.</h2>
-                <p className="text-[11px] text-[#a1a1a6] font-medium mt-0.5">Impresa Edile</p>
+                <h2 className="text-[15px] font-bold text-[#1d1d1f] tracking-tight leading-tight uppercase">{c.name}</h2>
+                <p className="text-[11px] text-[#a1a1a6] font-medium mt-0.5">{c.tagline || 'Impresa Edile'}</p>
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -134,13 +151,15 @@ export default function ContractPage({ adminMode = false }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-[#fafafa] rounded-2xl p-6">
               <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Appaltatore</p>
-              <p className="text-[14px] font-bold text-[#1d1d1f]">ECO SOLUTION S.a.s.</p>
+              <p className="text-[14px] font-bold text-[#1d1d1f]">{c.name}</p>
               <div className="text-[12px] text-[#86868b] leading-[1.8] mt-2">
-                <p>Sede Legale: Via Primo Maggio, 3 — 23892 Bulciago (LC)</p>
-                <p>Sede Operativa: Via Roma, 8 — 20823 Lentate sul Seveso (MB)</p>
-                <p>P.IVA / C.F.: 04640600161</p>
-                <p>Tel: +39 334 222 1212</p>
-                <p>Email: info@ecosolutionsas.it</p>
+                {c.legalAddress && <p>Sede Legale: {c.legalAddress.replace('\n', ' — ')}</p>}
+                {(c.address || c.addressLine2) && (
+                  <p>Sede Operativa: {[c.address, c.addressLine2].filter(Boolean).join(' — ')}</p>
+                )}
+                {c.vatId && <p>P.IVA / C.F.: {c.vatId}</p>}
+                {c.phone && <p>Tel: {c.phone}</p>}
+                {c.email && <p>Email: {c.email}</p>}
               </div>
             </div>
             <div className="bg-[#fafafa] rounded-2xl p-6">
@@ -252,6 +271,14 @@ export default function ContractPage({ adminMode = false }) {
               <span className="text-[13px] text-[#1d1d1f] font-bold uppercase tracking-tight">Totale Complessivo</span>
               <span className="text-[22px] text-[#1d1d1f] font-bold tabular-nums tracking-tight">{formatCurrency(lordo)}</span>
             </div>
+            {vatRate === 0 && regimeForfettario && (
+              <p className="text-[10px] text-[#a1a1a6] italic mt-2">
+                Operazione non soggetta a IVA — Regime Forfettario (L. 190/2014)
+              </p>
+            )}
+            {vatRate === 0 && !regimeForfettario && (
+              <p className="text-[10px] text-[#a1a1a6] italic mt-2">IVA esclusa (0%)</p>
+            )}
           </div>
         </div>
 
@@ -259,12 +286,27 @@ export default function ContractPage({ adminMode = false }) {
         <div data-pdf-block="art-2-corrispettivo" className="px-12 md:px-16 py-10 border-b border-gray-100">
           <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 2 — Corrispettivo</h3>
           <div className="text-[13px] text-[#1d1d1f] leading-[1.9]">
-            <p>
-              Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito 
-              in <strong>{formatCurrency(netto)}</strong> (imponibile) oltre IVA al {vatRate}% pari 
-              a <strong>{formatCurrency(ivaAmount)}</strong>, per un totale 
-              di <strong>{formatCurrency(lordo)}</strong>.
-            </p>
+            {vatRate > 0 ? (
+              <p>
+                Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito
+                in <strong>{formatCurrency(netto)}</strong> (imponibile) oltre IVA al {vatRate}% pari
+                a <strong>{formatCurrency(ivaAmount)}</strong>, per un totale
+                di <strong>{formatCurrency(lordo)}</strong>.
+              </p>
+            ) : regimeForfettario ? (
+              <p>
+                Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito
+                in <strong>{formatCurrency(netto)}</strong>.<br />
+                <span className="text-[12px] text-[#86868b] italic">
+                  Operazione non soggetta a IVA ai sensi dell'art. 1, commi 54–89, Legge 190/2014 — Regime Forfettario.
+                </span>
+              </p>
+            ) : (
+              <p>
+                Il corrispettivo complessivo per l'esecuzione delle opere di cui all'Art. 1 è stabilito
+                in <strong>{formatCurrency(netto)}</strong>, IVA esclusa (0%).
+              </p>
+            )}
             {corrispettivoText && (
               <div className="mt-3 whitespace-pre-line">{corrispettivoText}</div>
             )}
@@ -275,7 +317,7 @@ export default function ContractPage({ adminMode = false }) {
         <div data-pdf-block="art-3-pagamenti" className="px-12 md:px-16 py-10 border-b border-gray-100">
           <h3 className="text-[11px] font-black text-[#86868b] uppercase tracking-[0.2em] mb-5">Art. 3 — Modalità di pagamento</h3>
           <p className="text-[13px] text-[#1d1d1f] leading-[1.9] mb-6">
-            Il pagamento del corrispettivo avverrà secondo il seguente piano{vatRate > 0 ? ` (importi comprensivi di IVA al ${vatRate}%)` : ''}:
+            Il pagamento del corrispettivo avverrà secondo il seguente piano{vatRate > 0 ? ` (importi comprensivi di IVA al ${vatRate}%)` : regimeForfettario ? ' (regime forfettario, IVA non applicata)' : ''}:
           </p>
 
           {quote.paymentPlan && quote.paymentPlan.length > 0 ? (
@@ -487,7 +529,7 @@ export default function ContractPage({ adminMode = false }) {
               <p className="text-[10px] text-[#a1a1a6]">{quote.clientName || 'Nome e Cognome'}</p>
             </div>
             <div>
-              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Per ECO SOLUTION S.a.s.</p>
+              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Per {c.name}</p>
               <div className="border border-gray-100 rounded-xl bg-[#fafafa] min-h-[100px] mb-3 p-4">
                 <p className="text-[11px] text-[#a1a1a6] italic">Timbro e firma</p>
               </div>
@@ -540,37 +582,50 @@ export default function ContractPage({ adminMode = false }) {
         {/* ═══ FOOTER AZIENDALE ═══ */}
         <div data-pdf-block="contract-footer" className="px-12 md:px-16 py-12 border-t border-gray-100 bg-[#fafafa]">
           <div className="flex items-center gap-3 mb-8">
-            <img src={ecoLogo} alt="Eco Solution Logo" className="w-10 h-10 object-contain rounded-lg opacity-80" />
-            <p className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">ECO SOLUTION S.a.s.</p>
+            {c.logo ? (
+              <img src={c.logo} alt={c.name} className="w-10 h-10 object-contain rounded-lg opacity-80" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-[#1d1d1f] flex items-center justify-center shrink-0">
+                <span className="text-white text-[13px] font-black">{c.name.slice(0, 2).toUpperCase()}</span>
+              </div>
+            )}
+            <p className="text-[12px] font-bold text-[#1d1d1f] uppercase tracking-tight">{c.name}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] text-[#86868b] leading-[1.7]">
             <div>
-              <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
-              <p>Via Primo Maggio, 3</p>
-              <p>23892 Bulciago (LC)</p>
-              <div className="mt-3">
-                <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Operativa</p>
-                <p>Via Roma, 8</p>
-                <p>20823 Lentate sul Seveso (MB)</p>
-              </div>
+              {c.legalAddress ? (
+                <>
+                  <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Legale</p>
+                  {c.legalAddress.split('\n').map((l, i) => <p key={i}>{l}</p>)}
+                </>
+              ) : null}
+              {(c.address || c.addressLine2) && (
+                <div className={c.legalAddress ? 'mt-3' : ''}>
+                  <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Sede Operativa</p>
+                  {c.address && <p>{c.address}</p>}
+                  {c.addressLine2 && <p>{c.addressLine2}</p>}
+                </div>
+              )}
             </div>
             <div>
               <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Dati Fiscali</p>
-              <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
-              <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">04640600161</span></p>
-              <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">T9K4ZHO</span></p>
+              {c.vatId && <p>Partita IVA: <span className="text-[#1d1d1f] font-medium">{c.vatId}</span></p>}
+              {c.taxId && c.taxId !== c.vatId && <p>Codice Fiscale: <span className="text-[#1d1d1f] font-medium">{c.taxId}</span></p>}
+              {c.sdi && <p>Codice SDI: <span className="text-[#1d1d1f] font-medium">{c.sdi}</span></p>}
             </div>
-            <div>
-              <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
-              <p className="font-medium text-[#1d1d1f]">Banca di Credito Cooperativo di Barlassina</p>
-              <p>Filiale di Lentate sul Seveso (MB)</p>
-              <p>Via Papa Giovanni XXIII, 6</p>
-              <p>20823 Lentate sul Seveso (MB)</p>
-              <div className="mt-2">
-                <p>C/C N. <span className="text-[#1d1d1f] font-medium">06/605276</span></p>
-                <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">IT29 L083 7433 2400 0000 6605 276</span></p>
+            {(c.bankName || c.iban) && (
+              <div>
+                <p className="text-[8px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-2">Coordinate Bancarie</p>
+                {c.bankName && <p className="font-medium text-[#1d1d1f]">{c.bankName}</p>}
+                {c.bankBranch && c.bankBranch.split('\n').map((l, i) => <p key={i}>{l}</p>)}
+                {c.accountNumber && (
+                  <div className="mt-2">
+                    <p>C/C N. <span className="text-[#1d1d1f] font-medium">{c.accountNumber}</span></p>
+                  </div>
+                )}
+                {c.iban && <p>IBAN: <span className="text-[#1d1d1f] font-mono font-medium tracking-wide">{c.iban}</span></p>}
               </div>
-            </div>
+            )}
           </div>
         </div>
 

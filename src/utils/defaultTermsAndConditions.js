@@ -16,13 +16,11 @@ export function getDefaultTermsAndConditions(companyName) {
 
 6. Obblighi del committente. Il committente si impegna a garantire il libero e sicuro accesso alle aree oggetto dell'intervento, a fornire l'allacciamento alla rete elettrica e idrica ove necessario, e a sgomberare preventivamente le aree di lavoro da arredi e oggetti personali. Eventuali danni a beni non rimossi dal committente non saranno imputabili a ${companyName}.
 
-7. Responsabilità e assicurazione. ${companyName} è coperta da polizza assicurativa di responsabilità civile per danni a terzi derivanti dall'esecuzione dei lavori. Resta esclusa ogni responsabilità per danni preesistenti o non direttamente riconducibili alle opere oggetto del presente preventivo.
+7. Smaltimento materiali. Lo smaltimento dei materiali di risulta è incluso nel preventivo solo se espressamente indicato nelle singole voci di spesa. In caso contrario, lo smaltimento sarà a carico del committente.
 
-8. Smaltimento materiali. Lo smaltimento dei materiali di risulta è incluso nel preventivo solo se espressamente indicato nelle singole voci di spesa. In caso contrario, lo smaltimento sarà a carico del committente.
+8. Risoluzione e recesso. In caso di recesso unilaterale da parte del committente dopo l'accettazione del preventivo, ${companyName} avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.
 
-9. Risoluzione e recesso. In caso di recesso unilaterale da parte del committente dopo l'accettazione del preventivo, ${companyName} avrà diritto al pagamento dei lavori già eseguiti, dei materiali già acquistati e di un indennizzo pari al 20% dell'importo residuo non eseguito.
-
-10. Privacy. I dati personali raccolti saranno trattati in conformità al Regolamento UE 2016/679 (GDPR) e utilizzati esclusivamente per le finalità connesse all'esecuzione del presente incarico.`;
+9. Privacy. I dati personali raccolti saranno trattati in conformità al Regolamento UE 2016/679 (GDPR) e utilizzati esclusivamente per le finalità connesse all'esecuzione del presente incarico.`;
 }
 
 /**

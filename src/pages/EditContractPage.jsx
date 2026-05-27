@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Save, Plus, Trash2, ArrowUp, ArrowDown, Eye, ArrowLeft } from 'lucide-react';
 import AdminToolbar from '../components/AdminToolbar';
+import { COMPANY_PRESETS, PRESET_LIST, resolveCompanyData } from '../config/companyPresets';
 
 const generateId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -95,7 +96,8 @@ export default function EditContractPage() {
   const [quote, setQuote] = useState(null);
 
   // Editable contract data
-  const [vatRate, setVatRate] = useState(10);
+  const [vatRate, setVatRate] = useState(0);
+  const [regimeForfettario, setRegimeForfettario] = useState(false);
   const [premesseText, setPremesseText] = useState('');
   const [corrispettivoText, setCorrispettivoText] = useState('');
   const [pagamentiText, setPagamentiText] = useState('');
@@ -107,6 +109,9 @@ export default function EditContractPage() {
   const [clientResidenza, setClientResidenza] = useState('');
   const [clientTel, setClientTel] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+
+  // Company override for this contract (null = inherit from quote.companyData)
+  const [companyOverridePreset, setCompanyOverridePreset] = useState(null); // 'eco' | 'procasa' | null
 
   // ─── Load from Firebase ───
   useEffect(() => {
@@ -121,7 +126,10 @@ export default function EditContractPage() {
 
         // Load saved contractData or use defaults
         const cd = data.contractData || {};
-        setVatRate(cd.vatRate ?? 10);
+        // vatRate: usa quello salvato nel contratto; se mai salvato, prende l'IVA del preventivo come default sensato
+        const defaultVat = cd.vatRate !== undefined ? cd.vatRate : (parseFloat(data.vatPercentage) || 0);
+        setVatRate(defaultVat);
+        setRegimeForfettario(cd.regimeForfettario ?? data.regimeForfettario ?? false);
         setArticles(cd.articles?.length ? cd.articles : DEFAULT_ARTICLES.map(a => ({ ...a, id: a.id || generateId('art') })));
         
         const contractNumber = data.quoteNumber || quoteId.slice(-4).toUpperCase();
@@ -144,6 +152,9 @@ export default function EditContractPage() {
         setClientResidenza(cd.clientResidenza || '');
         setClientTel(cd.clientTel || '');
         setClientEmail(cd.clientEmail || '');
+
+        // Load company override
+        setCompanyOverridePreset(cd.companyOverridePreset || null);
 
       } catch (error) {
         console.error("Errore caricamento:", error);
@@ -192,6 +203,7 @@ export default function EditContractPage() {
     try {
       const contractData = {
         vatRate,
+        regimeForfettario: regimeForfettario || false,
         premesseText,
         corrispettivoText,
         pagamentiText,
@@ -201,6 +213,7 @@ export default function EditContractPage() {
         clientResidenza,
         clientTel,
         clientEmail,
+        companyOverridePreset: companyOverridePreset || null,
         lastUpdated: new Date().toISOString()
       };
 
@@ -244,6 +257,90 @@ export default function EditContractPage() {
 
       <main className="max-w-4xl mx-auto p-6 space-y-6">
 
+        {/* ═══ AZIENDA APPALTANTE ═══ */}
+        {(() => {
+          const effectiveCompany = resolveCompanyData(
+            companyOverridePreset
+              ? { preset: companyOverridePreset }
+              : quote.companyData
+          );
+          return (
+            <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h2 className="text-sm font-black text-gray-900 mb-1">🏢 Azienda Appaltante</h2>
+              <p className="text-xs text-gray-400 mb-4">
+                Scegli quale azienda appare nel contratto come appaltatore. Di default usa quella del preventivo.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                {/* Inherit from quote */}
+                <button
+                  onClick={() => setCompanyOverridePreset(null)}
+                  className={`flex flex-col items-start gap-1.5 p-4 rounded-xl border-2 transition-all text-left ${
+                    companyOverridePreset === null
+                      ? 'border-[#1d1d1f] bg-[#1d1d1f] text-white'
+                      : 'border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-wider opacity-60">Default</span>
+                  <span className="text-xs font-bold leading-tight">
+                    Dal preventivo<br />
+                    <span className={`font-normal text-[10px] ${companyOverridePreset === null ? 'text-white/70' : 'text-gray-400'}`}>
+                      {resolveCompanyData(quote.companyData).name}
+                    </span>
+                  </span>
+                </button>
+
+                {PRESET_LIST.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => setCompanyOverridePreset(preset.id)}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                      companyOverridePreset === preset.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    {preset.logo ? (
+                      <img src={preset.logo} alt={preset.name} className="w-8 h-8 object-contain rounded-md shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-md bg-gray-300 flex items-center justify-center shrink-0">
+                        <span className="text-white text-[10px] font-black">{preset.name.slice(0, 2).toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className={`text-[11px] font-bold leading-tight truncate ${companyOverridePreset === preset.id ? 'text-blue-700' : 'text-gray-800'}`}>
+                        {preset.name}
+                      </p>
+                      <p className={`text-[10px] truncate mt-0.5 ${companyOverridePreset === preset.id ? 'text-blue-500' : 'text-gray-400'}`}>
+                        {preset.tagline}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Preview dati azienda scelta */}
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-4">
+                {effectiveCompany.logo ? (
+                  <img src={effectiveCompany.logo} alt={effectiveCompany.name} className="w-10 h-10 object-contain rounded-lg shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-[#1d1d1f] flex items-center justify-center shrink-0">
+                    <span className="text-white text-[12px] font-black">{effectiveCompany.name.slice(0, 2).toUpperCase()}</span>
+                  </div>
+                )}
+                <div className="text-[11px] text-gray-500 leading-[1.7]">
+                  <p className="font-bold text-gray-900 text-[12px]">{effectiveCompany.name}</p>
+                  {effectiveCompany.vatId && <p>P.IVA: {effectiveCompany.vatId}</p>}
+                  {(effectiveCompany.address || effectiveCompany.addressLine2) && (
+                    <p>{[effectiveCompany.address, effectiveCompany.addressLine2].filter(Boolean).join(', ')}</p>
+                  )}
+                  {effectiveCompany.email && <p>{effectiveCompany.email}</p>}
+                </div>
+              </div>
+            </section>
+          );
+        })()}
+
         {/* ═══ SEZIONE IVA ═══ */}
         <section className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h2 className="text-sm font-black text-gray-900 mb-4">💶 IVA e Totali</h2>
@@ -253,7 +350,7 @@ export default function EditContractPage() {
               <Label>Aliquota IVA</Label>
               <select
                 value={vatRate}
-                onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                onChange={(e) => { setVatRate(parseFloat(e.target.value)); if (parseFloat(e.target.value) > 0) setRegimeForfettario(false); }}
                 className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
               >
                 {IVA_OPTIONS.map(o => (
@@ -274,6 +371,25 @@ export default function EditContractPage() {
               <p className="text-lg font-bold text-white tabular-nums">{formatCurrency(totals.lordo)}</p>
             </div>
           </div>
+
+          {vatRate === 0 && (
+            <div className="mt-4">
+              <label className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={regimeForfettario}
+                  onChange={(e) => setRegimeForfettario(e.target.checked)}
+                  className="mt-0.5 accent-amber-600 w-4 h-4 shrink-0"
+                />
+                <div>
+                  <p className="text-[12px] font-bold text-amber-800 leading-tight">Regime Forfettario</p>
+                  <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">
+                    Nel contratto apparirà: <em>"Operazione non soggetta a IVA ai sensi dell'art. 1, commi 54-89, Legge 190/2014 — Regime Forfettario"</em>
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
         </section>
 
         {/* ═══ DATI COMMITTENTE ═══ */}
