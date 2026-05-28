@@ -166,11 +166,29 @@ export default function CompanyDataEditor({ companyData, setEditingQuote }) {
                 />
               </div>
               <div className="md:col-span-2">
-                <Label>Indirizzo</Label>
+                <Label>Indirizzo Sede Operativa</Label>
                 <StyledInput
                   value={data.address}
                   onChange={(e) => updateCompanyData({ address: e.target.value })}
                   placeholder="Es. Via Roma 123, 20100 Milano (MI)"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Sede Legale (opzionale)</Label>
+                <StyledInput
+                  value={data.legalAddress || ''}
+                  onChange={(e) => updateCompanyData({ legalAddress: e.target.value })}
+                  placeholder="Es. Via Garibaldi 5, 23892 Bulciago (LC)"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Descrizione Aziendale (opzionale)</Label>
+                <textarea
+                  value={data.description || ''}
+                  onChange={(e) => updateCompanyData({ description: e.target.value })}
+                  rows={2}
+                  placeholder="Es. Impresa specializzata in ristrutturazioni civili e commerciali..."
+                  className="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm placeholder:text-gray-400 resize-none"
                 />
               </div>
               <div className="md:col-span-2">
@@ -228,7 +246,7 @@ export default function CompanyDataEditor({ companyData, setEditingQuote }) {
                 />
               </div>
               <div className="md:col-span-2">
-                <Label>Codice SDI</Label>
+                <Label>Codice Univoco / SDI (Fatturazione Elettronica)</Label>
                 <StyledInput
                   value={data.sdi}
                   onChange={(e) => updateCompanyData({ sdi: e.target.value })}

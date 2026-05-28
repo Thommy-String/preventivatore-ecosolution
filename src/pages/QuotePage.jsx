@@ -164,25 +164,43 @@ export default function QuotePage({ adminMode = false }) {
           {(() => {
             const companyInfo = resolveCompanyData(quote.companyData);
             const companyAddress = [companyInfo.address, companyInfo.addressLine2].filter(Boolean).join('\n');
+            const legalAddress = companyInfo.legalAddress ? companyInfo.legalAddress.replace('\n', ' — ') : null;
             const companyPhone = companyInfo.phone;
             const companyEmail = companyInfo.email;
             const companyVatId = companyInfo.vatId;
             const companySdi = companyInfo.sdi;
-            const companyWebsite = companyInfo.website;
+            const companyDescription = companyInfo.description;
 
             return (
               <div className="px-6 md:px-24 py-5 md:py-6 border-b border-gray-100/50 bg-gray-50/30">
 
+                {/* Descrizione aziendale — sopra la griglia, se presente */}
+                {companyDescription && (
+                  <p className="text-[11px] text-[#86868b] leading-relaxed mb-4 max-w-2xl italic">
+                    {companyDescription}
+                  </p>
+                )}
+
                 {/* DESKTOP */}
-                <div className="hidden md:flex items-center justify-between gap-10">
+                <div className="hidden md:flex items-start justify-between gap-8">
 
-                  {companyAddress && (
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
-                      <p className="text-[12px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
-                    </div>
-                  )}
+                  {/* Sede */}
+                  <div className="flex-1 min-w-0 space-y-2.5">
+                    {companyAddress && (
+                      <div>
+                        <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-0.5">Sede Operativa</p>
+                        <p className="text-[12px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
+                      </div>
+                    )}
+                    {legalAddress && (
+                      <div>
+                        <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-0.5">Sede Legale</p>
+                        <p className="text-[12px] text-[#1d1d1f] font-medium leading-tight">{legalAddress}</p>
+                      </div>
+                    )}
+                  </div>
 
+                  {/* Contatti */}
                   {(companyPhone || companyEmail) && (
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
@@ -201,17 +219,26 @@ export default function QuotePage({ adminMode = false }) {
                     </div>
                   )}
 
+                  {/* Emissione */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Emissione</p>
                     <p className="text-[12px] text-[#1d1d1f] font-medium">{quote.date}</p>
                     <p className="text-[11px] text-[#a1a1a6]">Valido 30 giorni</p>
                   </div>
 
+                  {/* Dati Fiscali */}
                   {companyVatId && (
-                    <div className="flex-1 min-w-0 text-right">
-                      <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
-                      <p className="text-[12px] text-[#1d1d1f] font-medium">{companyVatId}</p>
-                      {companySdi && <p className="text-[11px] text-[#a1a1a6]">SDI {companySdi}</p>}
+                    <div className="flex-1 min-w-0 text-right space-y-1.5">
+                      <div>
+                        <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-0.5">P.IVA</p>
+                        <p className="text-[12px] text-[#1d1d1f] font-medium">{companyVatId}</p>
+                      </div>
+                      {companySdi && (
+                        <div>
+                          <p className="text-[10px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-0.5">Cod. Univoco / SDI</p>
+                          <p className="text-[12px] text-[#1d1d1f] font-mono font-medium">{companySdi}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -220,23 +247,34 @@ export default function QuotePage({ adminMode = false }) {
                 <div className="md:hidden flex items-stretch gap-6">
                   <div className="flex-1 min-w-0 flex flex-col gap-4">
                     {companyAddress && (
-                      <div className="min-h-[52px]">
+                      <div>
                         <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Operativa</p>
                         <p className="text-[14px] text-[#1d1d1f] font-medium leading-tight whitespace-pre-line">{companyAddress}</p>
+                      </div>
+                    )}
+                    {legalAddress && (
+                      <div>
+                        <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Sede Legale</p>
+                        <p className="text-[13px] text-[#1d1d1f] font-medium leading-tight">{legalAddress}</p>
                       </div>
                     )}
                     {companyVatId && (
                       <div>
                         <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">P.IVA</p>
                         <p className="text-[14px] text-[#1d1d1f] font-medium">{companyVatId}</p>
-                        {companySdi && <p className="text-[13px] text-[#a1a1a6] leading-tight">SDI {companySdi}</p>}
+                        {companySdi && (
+                          <>
+                            <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mt-2 mb-1">Cod. Univoco / SDI</p>
+                            <p className="text-[13px] text-[#1d1d1f] font-mono font-medium">{companySdi}</p>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0 flex flex-col gap-4 text-right">
                     {(companyPhone || companyEmail) && (
-                      <div className="min-h-[52px]">
+                      <div>
                         <p className="text-[11px] font-bold text-[#86868b] uppercase tracking-[0.15em] mb-1">Contatti</p>
                         {companyPhone && (
                           <a href={`tel:${companyPhone.replace(/\s/g, '')}`} className="block text-[14px] text-blue-600 font-medium underline decoration-blue-600 decoration-1 underline-offset-2">
@@ -287,18 +325,70 @@ export default function QuotePage({ adminMode = false }) {
             {/* 3. GRIGLIA PROPRIETÀ */}
             <div className="flex flex-col gap-1 w-full">
 
-              <div className="group flex items-center min-h-[34px] py-1 px-2 -mx-2 hover:bg-gray-100/50 rounded-md transition-colors">
-                <div className="w-[180px] flex items-center gap-2 text-[17px] text-gray-500 shrink-0">
-                  <User size={16} className="text-gray-400 opacity-80" />
-                  <span>Cliente</span>
-                </div>
-                <div className="flex-1 flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[11px] font-bold uppercase shrink-0">
-                    {quote.clientName ? quote.clientName.charAt(0) : 'C'}
+              {quote.clientType === 'azienda' ? (
+                /* ── Azienda: card notion full-width, niente due colonne ── */
+                <div className="py-2 px-2 -mx-2">
+                  <div className="border border-gray-200 rounded-xl px-5 py-4 bg-white shadow-sm w-full">
+                    {/* Label sezione */}
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <User size={13} className="text-gray-400" />
+                      <span className="text-[11px] font-semibold text-[#a1a1a6] uppercase tracking-wider">Cliente</span>
+                    </div>
+                    {/* Ragione sociale */}
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-500">
+                          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                        </svg>
+                      </div>
+                      <span className="text-[18px] font-semibold text-[#1d1d1f] leading-tight">{quote.clientName}</span>
+                    </div>
+                    {/* Dati fiscali in griglia */}
+                    {(quote.clientVatId || quote.clientSdi || quote.clientLegalAddress || quote.clientPec) && (
+                      <div className="border-t border-gray-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
+                        {quote.clientVatId && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-semibold text-[#a1a1a6] uppercase tracking-wider">Partita IVA</span>
+                            <span className="text-[14px] font-mono text-[#1d1d1f]">{quote.clientVatId}</span>
+                          </div>
+                        )}
+                        {quote.clientSdi && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-semibold text-[#a1a1a6] uppercase tracking-wider">Codice SDI</span>
+                            <span className="text-[14px] font-mono text-[#1d1d1f]">{quote.clientSdi}</span>
+                          </div>
+                        )}
+                        {quote.clientLegalAddress && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-semibold text-[#a1a1a6] uppercase tracking-wider">Sede Legale</span>
+                            <span className="text-[14px] text-[#1d1d1f] leading-snug">{quote.clientLegalAddress}</span>
+                          </div>
+                        )}
+                        {quote.clientPec && (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-semibold text-[#a1a1a6] uppercase tracking-wider">PEC</span>
+                            <span className="text-[14px] text-[#1d1d1f]">{quote.clientPec}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[17px] font-medium text-[#1d1d1f]">{quote.clientName}</span>
                 </div>
-              </div>
+              ) : (
+                /* ── Privato: layout due colonne classico ── */
+                <div className="group flex items-center min-h-[34px] py-1 px-2 -mx-2 hover:bg-gray-100/50 rounded-md transition-colors">
+                  <div className="w-[180px] flex items-center gap-2 text-[17px] text-gray-500 shrink-0">
+                    <User size={16} className="text-gray-400 opacity-80" />
+                    <span>Cliente</span>
+                  </div>
+                  <div className="flex-1 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold uppercase shrink-0 bg-blue-100 text-blue-600">
+                      {quote.clientName ? quote.clientName.charAt(0) : 'C'}
+                    </div>
+                    <span className="text-[17px] font-medium text-[#1d1d1f]">{quote.clientName}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="group flex items-center min-h-[34px] py-1 px-2 -mx-2 hover:bg-gray-100/50 rounded-md transition-colors">
                 <div className="w-[180px] flex items-center gap-2 text-[17px] text-gray-500 shrink-0">

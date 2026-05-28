@@ -163,55 +163,84 @@ export default function ContractPage({ adminMode = false }) {
               </div>
             </div>
             <div className="bg-[#fafafa] rounded-2xl p-6">
-              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">Committente</p>
+              <p className="text-[9px] font-black text-[#a1a1a6] uppercase tracking-[0.15em] mb-3">
+                Committente {quote.clientType === 'azienda' ? '— Persona Giuridica' : '— Persona Fisica'}
+              </p>
               <p className="text-[14px] font-bold text-[#1d1d1f]">{quote.clientName || '—'}</p>
               <div className="text-[12px] text-[#86868b] leading-[1.8] mt-2">
-                {quote.address && <p>Indirizzo lavori: {quote.address}</p>}
-                <div className="mt-3 space-y-2.5">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[11px] font-semibold text-[#1d1d1f] shrink-0">C.F.*</span>
-                    {cd.clientCF ? (
-                      <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{cd.clientCF}</span>
-                    ) : (
-                      <div className="flex-1 border-b border-[#1d1d1f]/30 pb-0.5 min-h-[18px]"></div>
+                {quote.address && <p className="mb-2">Indirizzo lavori: {quote.address}</p>}
+
+                {quote.clientType === 'azienda' ? (
+                  /* ── Dati azienda ── */
+                  <div className="mt-2 space-y-2">
+                    {quote.clientVatId && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[11px] font-semibold text-[#1d1d1f] w-20 shrink-0">P.IVA</span>
+                        <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{quote.clientVatId}</span>
+                      </div>
+                    )}
+                    {quote.clientSdi && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[11px] text-[#86868b] w-20 shrink-0">Cod. SDI</span>
+                        <span className="text-[12px] font-mono text-[#1d1d1f]">{quote.clientSdi}</span>
+                      </div>
+                    )}
+                    {quote.clientLegalAddress && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-[11px] text-[#86868b] w-20 shrink-0 pt-px">Sede Legale</span>
+                        <span className="text-[12px] text-[#1d1d1f] leading-snug">{quote.clientLegalAddress}</span>
+                      </div>
+                    )}
+                    {quote.clientPec && (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[11px] text-[#86868b] w-20 shrink-0">PEC</span>
+                        <span className="text-[12px] text-[#1d1d1f]">{quote.clientPec}</span>
+                      </div>
+                    )}
+                    {!quote.clientVatId && !quote.clientSdi && !quote.clientLegalAddress && !quote.clientPec && (
+                      <p className="text-[11px] text-[#a1a1a6] italic">Dati fiscali non inseriti</p>
                     )}
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[11px] text-[#86868b] shrink-0">P.IVA</span>
-                    {cd.clientPIVA ? (
-                      <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{cd.clientPIVA}</span>
-                    ) : (
-                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[11px] text-[#86868b] shrink-0">Residenza</span>
-                    {cd.clientResidenza ? (
-                      <span className="text-[12px] text-[#1d1d1f] font-medium">{cd.clientResidenza}</span>
-                    ) : (
-                      <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+                ) : (
+                  /* ── Dati persona fisica ── */
+                  <div className="mt-2 space-y-2.5">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[10px] text-[#86868b] shrink-0">Tel</span>
-                      {cd.clientTel ? (
-                        <span className="text-[10px] text-[#636366] font-medium">{cd.clientTel}</span>
+                      <span className="text-[11px] font-semibold text-[#1d1d1f] w-20 shrink-0">C.F.*</span>
+                      {cd.clientCF ? (
+                        <span className="text-[12px] font-mono font-medium text-[#1d1d1f] tracking-wider">{cd.clientCF}</span>
+                      ) : (
+                        <div className="flex-1 border-b border-[#1d1d1f]/30 pb-0.5 min-h-[18px]"></div>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[11px] text-[#86868b] w-20 shrink-0">Residenza</span>
+                      {cd.clientResidenza ? (
+                        <span className="text-[12px] text-[#1d1d1f] font-medium">{cd.clientResidenza}</span>
                       ) : (
                         <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
                       )}
                     </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[10px] text-[#86868b] shrink-0">Email</span>
-                      {cd.clientEmail ? (
-                        <span className="text-[10px] text-[#636366] font-medium">{cd.clientEmail}</span>
-                      ) : (
-                        <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
-                      )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[10px] text-[#86868b] shrink-0">Tel</span>
+                        {cd.clientTel ? (
+                          <span className="text-[10px] text-[#636366] font-medium">{cd.clientTel}</span>
+                        ) : (
+                          <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[10px] text-[#86868b] shrink-0">Email</span>
+                        {cd.clientEmail ? (
+                          <span className="text-[10px] text-[#636366] font-medium">{cd.clientEmail}</span>
+                        ) : (
+                          <div className="flex-1 border-b border-dashed border-gray-200 pb-0.5 min-h-[18px]"></div>
+                        )}
+                      </div>
                     </div>
+                    <p className="text-[9px] text-[#a1a1a6] mt-1 italic">* Campo obbligatorio ai fini della fatturazione e delle detrazioni fiscali</p>
                   </div>
-                </div>
-                <p className="text-[9px] text-[#a1a1a6] mt-2 italic">* Campo obbligatorio ai fini della fatturazione e delle detrazioni fiscali</p>
+                )}
               </div>
             </div>
           </div>

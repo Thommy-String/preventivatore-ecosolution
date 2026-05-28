@@ -655,38 +655,98 @@ export default function EditQuotePage() { // Non servono più props qui
                 />
               </div>
 
-              {/* Cliente */}
-              <div>
-                <Label>Cliente</Label>
-                <StyledInput
-                  name="clientName"
-                  value={editingQuote.clientName}
-                  onChange={handleDetailsChange}
-                  placeholder="Nome Cliente"
-                />
+              {/* ─── CLIENTE ─── */}
+              <div className="md:col-span-2 border border-gray-200 rounded-2xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Tipo Committente</Label>
+                  <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                    {[
+                      { id: 'privato', label: '👤 Privato' },
+                      { id: 'azienda', label: '🏢 Azienda' },
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setEditingQuote(prev => ({ ...prev, clientType: opt.id }))}
+                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                          (editingQuote.clientType || 'privato') === opt.id
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Nome principale */}
+                <div>
+                  <Label>{(editingQuote.clientType || 'privato') === 'azienda' ? 'Ragione Sociale / Nome Azienda' : 'Nome e Cognome'}</Label>
+                  <StyledInput
+                    name="clientName"
+                    value={editingQuote.clientName}
+                    onChange={handleDetailsChange}
+                    placeholder={(editingQuote.clientType || 'privato') === 'azienda' ? 'Es. Rossi Costruzioni S.r.l.' : 'Es. Mario Rossi'}
+                  />
+                </div>
+
+                {/* Campi extra solo per azienda */}
+                {(editingQuote.clientType || 'privato') === 'azienda' && (
+                  <div className="space-y-3 pt-2 border-t border-gray-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <Label>Partita IVA</Label>
+                        <StyledInput
+                          name="clientVatId"
+                          value={editingQuote.clientVatId || ''}
+                          onChange={handleDetailsChange}
+                          placeholder="Es. 12345678901"
+                        />
+                      </div>
+                      <div>
+                        <Label>Codice Univoco / SDI</Label>
+                        <StyledInput
+                          name="clientSdi"
+                          value={editingQuote.clientSdi || ''}
+                          onChange={handleDetailsChange}
+                          placeholder="Es. T9K4ZHO"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Sede Legale</Label>
+                      <StyledInput
+                        name="clientLegalAddress"
+                        value={editingQuote.clientLegalAddress || ''}
+                        onChange={handleDetailsChange}
+                        placeholder="Es. Via Garibaldi 5, 20100 Milano (MI)"
+                      />
+                    </div>
+                    <div>
+                      <Label>PEC (opzionale)</Label>
+                      <StyledInput
+                        name="clientPec"
+                        value={editingQuote.clientPec || ''}
+                        onChange={handleDetailsChange}
+                        placeholder="Es. rossicostruzioni@pec.it"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Indirizzo Cliente */}
-              <div className="md:col-span-2">
-                <Label>Indirizzo Cliente</Label>
-                <StyledInput
-                  name="clientAddress"
-                  value={editingQuote.clientAddress || ''}
-                  onChange={handleDetailsChange}
-                  placeholder="Es. Via Roma 12, Milano"
-                />
-              </div>
-
-              {/* Indirizzo Cliente */}
-              <div className="md:col-span-2">
-                <Label>Indirizzo Cliente</Label>
-                <StyledInput
-                  name="clientAddress"
-                  value={editingQuote.clientAddress || ''}
-                  onChange={handleDetailsChange}
-                  placeholder="Es. Via Roma 12, Milano"
-                />
-              </div>
+              {/* Indirizzo Cliente (solo per privato, per azienda è già nella sezione sopra) */}
+              {(editingQuote.clientType || 'privato') === 'privato' && (
+                <div className="md:col-span-2">
+                  <Label>Indirizzo / Domicilio (opzionale)</Label>
+                  <StyledInput
+                    name="clientAddress"
+                    value={editingQuote.clientAddress || ''}
+                    onChange={handleDetailsChange}
+                    placeholder="Es. Via Roma 12, Milano"
+                  />
+                </div>
+              )}
 
               {/* --- CONTROLLO STATO (Testo + Colore) --- */}
               <div className="md:col-span-2 border-t border-gray-100 pt-4 mt-2">
