@@ -90,15 +90,19 @@ export default function RichTextEditor({ value, onChange, placeholder }) {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
 
-  const isInitialized = useRef(false);
-  const lastHtml = useRef(value || '');
+  const lastHtml = useRef('');
   useEffect(() => {
-    if (!isInitialized.current && editorRef.current) {
-      const clean = value ? sanitizeHtml(value) : '';
+    if (!editorRef.current) return;
+
+    const clean = value ? sanitizeHtml(value) : '';
+
+    // Sincronizza sempre il DOM editor con il valore esterno.
+    // Questo copre anche il primo mount con valore già presente.
+    if (editorRef.current.innerHTML !== clean) {
       editorRef.current.innerHTML = clean;
-      lastHtml.current = clean;
-      isInitialized.current = true;
     }
+
+    lastHtml.current = clean;
   }, [value]);
 
   const emitChange = useCallback(() => {

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { MapPin, Check, User, Calendar, FileText, Download } from 'lucide-react';
+import { MapPin, Check, User, Calendar, FileText, Download, Users } from 'lucide-react';
 
 // Logo aziendale
 import ecoLogo from '../assets/images/eco-solutions-logo-.jpeg';
@@ -386,6 +386,30 @@ export default function QuotePage({ adminMode = false }) {
                       {quote.clientName ? quote.clientName.charAt(0) : 'C'}
                     </div>
                     <span className="text-[17px] font-medium text-[#1d1d1f]">{quote.clientName}</span>
+                  </div>
+                </div>
+              )}
+
+              {quote.teamMembers && quote.teamMembers.length > 0 && (
+                <div className="group flex items-center min-h-[34px] py-1 px-2 -mx-2 hover:bg-gray-100/50 rounded-md transition-colors">
+                  <div className="w-[180px] flex items-center gap-2 text-[17px] text-gray-500 shrink-0">
+                    <Users size={16} className="text-gray-400 opacity-80" />
+                    <span>Team</span>
+                  </div>
+                  <div className="flex-1 flex flex-wrap items-center gap-3 text-[12px] text-gray-500">
+                    {quote.teamMembers.slice(0, 5).map(member => (
+                      <div key={member.id || member.name} className="flex items-center gap-2">
+                        <img
+                          src={member.photoUrl || 'https://via.placeholder.com/80'}
+                          alt={member.name}
+                          className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                        />
+                        <span className="font-medium text-[12px] text-[#1d1d1f] max-w-[120px] truncate">{member.name}</span>
+                      </div>
+                    ))}
+                    {quote.teamMembers.length > 5 && (
+                      <span className="text-[12px] text-gray-500">+{quote.teamMembers.length - 5} altri</span>
+                    )}
                   </div>
                 </div>
               )}

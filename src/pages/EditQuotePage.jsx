@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate, } from 'react-router-dom';
 import { doc, getDoc, setDoc } from "firebase/firestore"; // <--- NUOVI IMPORT FIREBASE
 import { db } from "../firebase"; // <--- IL TUO FILE DI COLLEGAMENTO
 import {
-  LinkIcon, Save, Trash2, Plus, Copy, ArrowUp, ArrowDown, X, Image as ImageIcon, Calculator, Package
+  LinkIcon, Save, Trash2, Plus, Copy, ArrowUp, ArrowDown, X, Image as ImageIcon, Calculator, Package, Library
 } from 'lucide-react';
 
 import { DEFAULT_TEAM } from '../config/defaultTeam';
@@ -16,6 +16,7 @@ import MaterialsEditor from '../components/MaterialsEditor';
 import SectionMaterialsEditor from '../components/SectionMaterialsEditor';
 import RichTextEditor from '../components/RichTextEditor';
 import CompanyDataEditor from '../components/CompanyDataEditor';
+import DefaultLineItemsModal from '../components/DefaultLineItemsModal';
 import AdminToolbar from '../components/AdminToolbar';
 
 // --- Componenti UI Helpers ---
@@ -48,6 +49,34 @@ const IconButton = ({ onClick, icon: Icon, color = "text-gray-400 hover:text-gra
 // Funzione per generare ID univoci davvero (Timestamp + Numero Casuale)
 const generateUniqueId = (prefix) => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+const createSectionSummaryItem = (sectionTitle = 'Nuova Sezione', overrides = {}) => ({
+  id: generateUniqueId('item'),
+  description: sectionTitle,
+  quantity: 1,
+  unit: 'pz',
+  price: 0,
+  originalPrice: '',
+  ...overrides,
+});
+
+const normalizeSection = (section = {}) => {
+  const title = section.title || 'Nuova Sezione';
+  const sourceItems = Array.isArray(section.items) ? section.items : [];
+  const normalizedItems = (sourceItems.length > 0 ? sourceItems : [createSectionSummaryItem(title)]).map((item) => ({
+    ...item,
+    description: title,
+  }));
+
+  return {
+    ...section,
+    title,
+    description: section.description || '',
+    photos: Array.isArray(section.photos) ? section.photos : [],
+    materials: Array.isArray(section.materials) ? section.materials : [],
+    items: normalizedItems,
+  };
 };
 
 // --- CONFIGURAZIONE COLORI STATO ---
@@ -98,7 +127,7 @@ export default function EditQuotePage() { // Non servono più props qui
       sdi: ''
     }
   });
-
+ 
   // --- 1. CARICAMENTO DATI DA FIREBASE ---
   useEffect(() => {
     const loadQuote = async () => {
@@ -124,7 +153,10 @@ export default function EditQuotePage() { // Non servono più props qui
               ];
             }
           }
-          setEditingQuote(data);
+          setEditingQuote({
+            ...data,
+            sections: (data.sections || []).map(normalizeSection),
+          });
         } else {
           console.log("Nessun preventivo trovato, ne creiamo uno nuovo.");
         }
@@ -141,6 +173,8 @@ export default function EditQuotePage() { // Non servono più props qui
 
 
   // --- Logica Calcoli Live ---
+  const [modalOpen, setModalOpen] = useState(false);
+  const [lineItemsTargetSection, setLineItemsTargetSection] = useState(null);
   const liveSummary = useMemo(() => {
     if (!editingQuote) return { subtotal: 0, total: 0, originalTotal: 0, discountAmount: 0 };
     let subtotal = 0;
@@ -243,20 +277,45 @@ export default function EditQuotePage() { // Non servono più props qui
 
   const handleSectionChange = (index, e) => {
     const { name, value } = e.target;
+
+    // Quando il modal Libreria è aperto, il blur del RichTextEditor può emettere
+    // in ritardo la vecchia descrizione e sovrascrivere il preset appena inserito.
+    // Ignoriamo quindi update descrizione durante il modal aperto.
+    if (modalOpen && name === 'description') {
+      return;
+    }
+
     setEditingQuote(prev => {
       const newSections = [...prev.sections];
-      newSections[index] = { ...newSections[index], [name]: value };
+      const targetSection = newSections[index] || {};
+      const updatedSection = { ...targetSection, [name]: value };
+
+      if (name === 'title') {
+        const nextTitle = value || 'Nuova Sezione';
+        updatedSection.title = nextTitle;
+        updatedSection.items = (targetSection.items || []).map((item) => ({
+          ...item,
+          description: nextTitle,
+        }));
+      }
+
+      if (name === 'description' && typeof value !== 'string') {
+        updatedSection.description = '';
+      }
+
+      newSections[index] = normalizeSection(updatedSection);
       return { ...prev, sections: newSections };
     });
   };
 
   const addSection = () => {
+    const title = 'Nuova Sezione';
     const newSection = {
       id: generateUniqueId('sect'), // Usa il nuovo generatore
-      title: 'Nuova Sezione',
+      title,
       description: '',
       photos: [],
-      items: [],
+      items: [createSectionSummaryItem(title)],
       materials: [],
     };
     setEditingQuote(prev => ({ ...prev, sections: [...prev.sections, newSection] }));
@@ -272,7 +331,8 @@ export default function EditQuotePage() { // Non servono più props qui
       title: `${sectionToCopy.title} (Copia)`,
       items: sectionToCopy.items.map(item => ({
         ...item,
-        id: generateUniqueId('item') // CRUCIALE: Nuovo ID per ogni voce duplicata
+        id: generateUniqueId('item'), // CRUCIALE: Nuovo ID per ogni voce duplicata
+        description: `${sectionToCopy.title} (Copia)`
       })),
       materials: (sectionToCopy.materials || []).map(mat => ({
         ...mat,
@@ -317,19 +377,17 @@ export default function EditQuotePage() { // Non servono più props qui
       const newSections = [...prev.sections];
       const newItems = [...newSections[sectionIndex].items];
       newItems[itemIndex] = { ...newItems[itemIndex], [name]: value };
+      // Business rule: la voce di spesa è solo la copia del titolo sezione.
+      newItems[itemIndex].description = newSections[sectionIndex].title || 'Nuova Sezione';
       newSections[sectionIndex] = { ...newSections[sectionIndex], items: newItems };
       return { ...prev, sections: newSections };
     });
   };
 
   const addItem = (sectionIndex) => {
+    const sectionTitle = editingQuote.sections?.[sectionIndex]?.title || 'Nuova Sezione';
     const newItem = {
-      id: generateUniqueId('item'),
-      description: '',
-      quantity: 1,
-      unit: 'pz',
-      price: 0,
-      originalPrice: ''
+      ...createSectionSummaryItem(sectionTitle)
     };
     setEditingQuote(prev => {
       const newSections = [...prev.sections];
@@ -596,6 +654,7 @@ export default function EditQuotePage() { // Non servono più props qui
 
       const quoteToSave = removeUndefined({
         ...editingQuote,
+        sections: (editingQuote.sections || []).map(normalizeSection),
         summary: finalSummary,
         lastUpdated: new Date().toISOString()
       });
@@ -951,12 +1010,23 @@ export default function EditQuotePage() { // Non servono più props qui
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Sezioni ({editingQuote.sections.length})</h2>
-              <button onClick={addSection} className="text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-lg transition-colors">
-                + Nuova Sezione
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setLineItemsTargetSection(null);
+                    setModalOpen(true);
+                  }}
+                  className="text-sm font-semibold uppercase tracking-[0.2em] text-white bg-black px-4 py-2 rounded-lg"
+                >
+                  Voci predefinite
+                </button>
+                <button onClick={addSection} className="text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-lg transition-colors">
+                  + Nuova Sezione
+                </button>
+              </div>
             </div>
 
-            {editingQuote.sections.map((section, sIndex) => (
+          {editingQuote.sections.map((section, sIndex) => (
               <div key={section.id} className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden group">
                 <div className="bg-gray-50/50 p-4 border-b border-gray-100 flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
@@ -971,6 +1041,14 @@ export default function EditQuotePage() { // Non servono più props qui
                     />
                   </div>
                   <div className="flex items-center gap-1">
+                    <IconButton
+                      onClick={() => {
+                        setLineItemsTargetSection(section.id);
+                        setModalOpen(true);
+                      }}
+                      icon={Library}
+                      title="Inserisci voce predefinita in questa sezione"
+                    />
                     <IconButton onClick={() => moveSection(sIndex, 'up')} icon={ArrowUp} title="Sposta su" />
                     <IconButton onClick={() => moveSection(sIndex, 'down')} icon={ArrowDown} title="Sposta giù" />
                     <IconButton onClick={() => duplicateSection(sIndex)} icon={Copy} title="Duplica" />
@@ -981,7 +1059,12 @@ export default function EditQuotePage() { // Non servono più props qui
                 <div className="p-6 space-y-6">
                   <div>
                     <Label>Descrizione</Label>
-                    <RichTextEditor value={section.description} onChange={(html) => { const e = { target: { name: 'description', value: html } }; handleSectionChange(sIndex, e); }} placeholder="Descrivi i lavori..." />
+                    <RichTextEditor
+                      key={`section-desc-${section.id}-${(section.description || '').length}`}
+                      value={section.description}
+                      onChange={(html) => { const e = { target: { name: 'description', value: html } }; handleSectionChange(sIndex, e); }}
+                      placeholder="Descrivi i lavori..."
+                    />
                   </div>
 
                   <div>
@@ -1020,7 +1103,7 @@ export default function EditQuotePage() { // Non servono più props qui
                     <div className="space-y-3">
                       {section.items.map((item, iIndex) => (
                         <div key={item.id} className="flex gap-3 items-start">
-                          <div className="flex-1"><StyledInput name="description" value={item.description} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="Descrizione voce" /></div>
+                          <div className="flex-1"><StyledInput name="description" value={item.description} readOnly disabled placeholder="Copia automatica del titolo sezione" /></div>
                           <div className="w-20"><StyledInput name="quantity" type="number" value={item.quantity} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="Qtà" /></div>
                           <div className="w-20"><StyledInput name="unit" value={item.unit} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="UdM" /></div>
                           <div className="w-28"><StyledInput name="price" type="number" value={item.price} onChange={(e) => handleItemChange(sIndex, iIndex, e)} placeholder="€" /></div>
@@ -1911,6 +1994,74 @@ export default function EditQuotePage() { // Non servono più props qui
           </div>
         </div>
       </main>
+
+      <DefaultLineItemsModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        sections={editingQuote.sections}
+        initialSectionId={lineItemsTargetSection}
+        onInsert={(item, targetId) => {
+          setEditingQuote(prev => {
+            const sections = [...(prev.sections || [])];
+            // Libreria = preset di SEZIONE intera.
+            // - "new" => crea nuova sezione
+            // - sezione esistente => sovrascrive completamente quella sezione
+            const targetSectionId = targetId || lineItemsTargetSection;
+            const targetIndex = targetSectionId
+              ? sections.findIndex((sec) => sec.id === targetSectionId)
+              : -1;
+
+            if (targetId === 'new' || targetIndex < 0) {
+              sections.push(createSectionFromDefaultItem(item));
+            } else {
+              const targetSection = sections[targetIndex] || {};
+              sections[targetIndex] = normalizeSection({
+                ...createSectionFromDefaultItem(item),
+                id: targetSection.id || generateUniqueId('sect'),
+              });
+            }
+
+            return { ...prev, sections };
+          });
+
+          setLineItemsTargetSection(null);
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
+}
+
+function createSectionFromDefaultItem(item) {
+  const sectionTitle = item?.title || 'Nuova Sezione';
+  const rawDescription = [
+    item?.description,
+    item?.sectionDescription,
+    item?.details,
+    item?.text
+  ].find((v) => typeof v === 'string' && v.trim().length > 0) || '';
+
+  // Il campo descrizione sezione è HTML (RichTextEditor).
+  // Se arriva testo semplice dalla libreria, lo convertiamo in <p> per essere sempre visibile.
+  const sectionDescription = rawDescription
+    ? `<p>${rawDescription}</p>`
+    : `<p>${sectionTitle}</p>`;
+
+  return {
+    id: generateUniqueId('sect'),
+    title: sectionTitle,
+    description: sectionDescription,
+    photos: [],
+    items: [
+      {
+        id: generateUniqueId('item'),
+        description: sectionTitle,
+        quantity: item?.quantity || 1,
+        unit: item?.unit || 'pz',
+        price: item?.price || 0,
+        originalPrice: item?.originalPrice || ''
+      }
+    ],
+    materials: []
+  };
 }
