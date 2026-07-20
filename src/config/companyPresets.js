@@ -49,9 +49,9 @@ export const COMPANY_PRESETS = {
 
   procasaroma: {
     id: 'procasaroma',
-    name: 'Pro Casa Parquet Roma',
-    shortName: 'Pro Casa Parquet',
-    tagline: 'Posa Pavimenti & Parquet',
+    name: 'PosaParquetRoma.it',
+    shortName: 'PosaParquetRoma',
+    tagline: 'Posatori specialisti',
     logo: proCasaLogo,
     address: 'Via Jacopo Sansovino 2 00019',
     addressLine2: 'Tivoli - Roma',

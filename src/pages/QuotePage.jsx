@@ -794,7 +794,7 @@ export default function QuotePage({ adminMode = false }) {
 
         </div>
         <p className="text-[15px] text-gray-400 font-medium tracking-tight">
-          Documento creato con il sistema di gestione interno di Eco Solution S.a.s. Sviluppato e mantenuto da Thomas.
+          Documento creato con il sistema di gestione interno. Sviluppato e mantenuto da Thomas.
         </p>
       </div>
     </div>

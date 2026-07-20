@@ -1,3 +1,5 @@
+import { resolveCompanyData } from '../config/companyPresets';
+
 /**
  * Genera il testo predefinito dei Termini e Condizioni con il nome dell'azienda dinamico
  * @param {string} companyName - Il nome dell'azienda (es: "ECO SOLUTION S.a.s." o il nome custom)
@@ -29,14 +31,6 @@ export function getDefaultTermsAndConditions(companyName) {
  * @returns {string} Il nome dell'azienda (custom, preset selezionato o default ECO)
  */
 export function getCompanyDisplayName(companyData) {
-  if (companyData?.useCustom && companyData?.name) {
-    return companyData.name;
-  }
-  // Mapping rapido dei preset (evita import circolare con companyPresets)
-  const presetNames = {
-    eco: 'ECO SOLUTION S.a.s.',
-    procasa: 'Pro Casa Parquet Milano',
-  };
-  const presetId = companyData?.preset || 'eco';
-  return presetNames[presetId] || 'ECO SOLUTION S.a.s.';
+  const resolved = resolveCompanyData(companyData);
+  return resolved?.name || 'ECO SOLUTION S.a.s.';
 }
