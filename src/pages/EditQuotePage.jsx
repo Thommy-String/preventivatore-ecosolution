@@ -1060,7 +1060,7 @@ export default function EditQuotePage() { // Non servono più props qui
                   <div>
                     <Label>Descrizione</Label>
                     <RichTextEditor
-                      key={`section-desc-${section.id}-${(section.description || '').length}`}
+                      key={`section-desc-${section.id}`}
                       value={section.description}
                       onChange={(html) => { const e = { target: { name: 'description', value: html } }; handleSectionChange(sIndex, e); }}
                       placeholder="Descrivi i lavori..."
